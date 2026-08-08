@@ -7,9 +7,21 @@ const THEME_KEY = 'betternm_theme_v1';
 const ACCENT_KEY = 'betternm_accent_v1';
 const MASCOT_KEY = 'betternm_mascot_v1';
 const FEEDBACK_KEY = 'betternm_feedback_v1';
+const SEEN_KEY = 'betternm_seen_v1';
 const DATA_PREFIX = 'betternm_data_v1_';
 
-const APP_VERSION = 'beta 0.2';
+const APP_VERSION = 'beta 0.3';
+
+const RELEASE_NOTES = {
+  version: 'beta 0.3',
+  changes: [
+    'Nowości: zakładka pokazująca co się zmieniło w aplikacji',
+    'Automatyczne kopie bezpieczeństwa danych — dane nigdy nie giną przy aktualizacji',
+    'Przy pierwszym uruchomieniu tworzysz swój własny profil',
+    'Przycisk „Aktualizuj aplikację” w ustawieniach',
+    'Strzałka cofania w ustawieniach'
+  ]
+};
 
 const ACCENTS = {
   orange: { label: 'Pomarańczowy', color: '#fc4c02' },
@@ -2648,7 +2660,23 @@ function bindEvents() {
     });
   }
 
-  document.getElementById('btn-settings').addEventListener('click', () => { fillReminderSettings(); renderFeedback(); openModal('modal-settings'); });
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    fillReminderSettings();
+    renderFeedback();
+    renderChangelog();
+    openModal('modal-settings');
+    const isNew = seenVersion() !== APP_VERSION;
+    if (isNew) {
+      markSeenVersion();
+      refreshUpdateDot();
+      const item = document.getElementById('set-nowosci');
+      if (item) {
+        item.classList.add('open');
+        const head = item.querySelector('.set-head');
+        if (head) head.setAttribute('aria-expanded', 'true');
+      }
+    }
+  });
   document.getElementById('modal-settings').addEventListener('click', e => {
     const head = e.target.closest('.set-head');
     if (!head) return;
@@ -2699,15 +2727,31 @@ document.getElementById('mascot-none').addEventListener('click', () => applyMasc
 
 let deferredPrompt = null;
 
+function seenVersion() { return localStorage.getItem(SEEN_KEY) || ''; }
+function markSeenVersion() { try { localStorage.setItem(SEEN_KEY, APP_VERSION); } catch (e) {} }
+
+function refreshUpdateDot() {
+  const b = document.getElementById('btn-settings');
+  if (b) b.classList.toggle('has-update', seenVersion() !== APP_VERSION);
+}
+
+function renderChangelog() {
+  const el = document.getElementById('changelog-list');
+  if (!el) return;
+  el.innerHTML = '<div class="changelog-ver">' + esc(APP_VERSION) + '</div>' +
+    RELEASE_NOTES.changes.map(c => '<div class="changelog-item"><span class="changelog-bullet">•</span>' + esc(c) + '</div>').join('');
+}
+
 function updateApp() {
-  toast('Sprawdzam aktualizacje…');
+  toast('Aktualizuję aplikację…');
+  let done = false;
+  const reload = () => { if (!done) { done = true; location.reload(); } };
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.getRegistration().then(reg => {
-      if (reg) reg.update();
-    });
-    setTimeout(() => location.reload(), 1800);
+    navigator.serviceWorker.addEventListener('controllerchange', reload);
+    navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
+    setTimeout(reload, 3000);
   } else {
-    setTimeout(() => location.reload(), 300);
+    setTimeout(reload, 400);
   }
 }
 
@@ -2746,6 +2790,8 @@ function init() {
   bindEvents();
   setupInstall();
   updateProfileBadge();
+  renderChangelog();
+  refreshUpdateDot();
   fillReminderSettings();
   renderPlans();
   renderHealth();

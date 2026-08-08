@@ -72,7 +72,18 @@ body {
   color: #fff;
   flex: 1;
 }
-.header-btn { margin-left: auto; }
+.header-btn { margin-left: auto; position: relative; }
+#btn-settings.has-update::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
 .app-logo {
   height: 30px;
   width: auto;
@@ -1179,6 +1190,21 @@ select option {
 [data-theme="light"] .tips-card li { color: #37303a; }
 
 /* ===== Ustawienia: lista uwag ===== */
+.changelog-ver {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.changelog-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 3px 0;
+}
+.changelog-bullet { color: var(--accent); font-weight: 800; }
 .fb-item {
   display: flex;
   align-items: flex-start;
