@@ -10,16 +10,15 @@ const FEEDBACK_KEY = 'betternm_feedback_v1';
 const SEEN_KEY = 'betternm_seen_v1';
 const DATA_PREFIX = 'betternm_data_v1_';
 
-const APP_VERSION = 'beta 0.3';
+const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
+
+const APP_VERSION = 'beta 0.4';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.3',
+  version: 'beta 0.4',
   changes: [
-    'Nowości: zakładka pokazująca co się zmieniło w aplikacji',
-    'Automatyczne kopie bezpieczeństwa danych — dane nigdy nie giną przy aktualizacji',
-    'Przy pierwszym uruchomieniu tworzysz swój własny profil',
-    'Przycisk „Aktualizuj aplikację” w ustawieniach',
-    'Strzałka cofania w ustawieniach'
+    'Uwagi i poprawki: przycisk „Wyślij do autora” — Twoje uwagi trafiają bezpośrednio do dewelopera (jako Issue na GitHubie)',
+    'Poprawiona aktualizacja na Safari/iPhone — wersja pobiera się nawet, gdy service worker jeszcze nie przejął strony'
   ]
 };
 
@@ -2272,6 +2271,28 @@ function copyFeedback() {
   if (!arr.length) { toast('Brak uwag do skopiowania'); return; }
   copyText(arr.map((t, i) => (i + 1) + '. ' + t).join('\n'), () => toast('Uwagi skopiowane do schowka'), () => toast('Nie udało się skopiować'));
 }
+function sendFeedback() {
+  const arr = getFeedback();
+  if (!arr.length) { toast('Dodaj najpierw uwagę'); return; }
+  const profile = activeProfile();
+  const who = profile && profile.name ? profile.name : 'bez profilu';
+  const body = arr.map((t, i) => (i + 1) + '. ' + t).join('\n') +
+    '\n\n— wysłano z BetterNM ' + APP_VERSION + ' (profil: ' + who + ')';
+  toast('Wysyłam do autora…');
+  fetch(FEEDBACK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Uwagi od: ' + who,
+      body: body
+    })
+  })
+    .then(res => {
+      if (res.ok) toast('Wysłano do autora — dzięki!');
+      else toast('Nie udało się wysłać (błąd ' + res.status + ')');
+    })
+    .catch(() => toast('Błąd sieci — spróbuj później'));
+}
 
 function importData(file) {
   const reader = new FileReader();
@@ -2686,6 +2707,7 @@ function bindEvents() {
   });
   document.getElementById('feedback-add').addEventListener('click', addFeedback);
   document.getElementById('feedback-copy').addEventListener('click', copyFeedback);
+  document.getElementById('feedback-send').addEventListener('click', sendFeedback);
   document.getElementById('feedback-list').addEventListener('click', e => {
     const b = e.target.closest('[data-fb-del]');
     if (b) delFeedback(Number(b.dataset.fbDel));
@@ -2746,10 +2768,10 @@ function updateApp() {
   toast('Aktualizuję aplikację…');
   let done = false;
   const reload = () => { if (!done) { done = true; location.reload(); } };
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', reload);
     navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
-    setTimeout(reload, 3000);
+    setTimeout(reload, 1500);
   } else {
     setTimeout(reload, 400);
   }
