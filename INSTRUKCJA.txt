@@ -1,0 +1,83 @@
+========================================
+  SIŁOWNIA TRACKER - INSTRUKCJA
+========================================
+
+1. JAK URUCHOMIĆ - NA KOMPUTERZE (najprościej)
+------------------------------------------------
+1. Kliknij DWA RAZY na plik:  Aplikacja.html
+2. Aplikacja otworzy się w przeglądarce.
+   Koniec - bez żadnych okien, serwerów i instalacji.
+3. Dane zapisują się automatycznie na tym komputerze.
+
+Jeśli chcesz mieć skrót na pulpicie:
+- kliknij Aplikacja.html prawym przyciskiem
+- Wyślij do -> Pulpit (utwórz skrót)
+
+
+1b. JAK URUCHOMIĆ - NA TELEFONIE (opcjonalnie)
+-----------------------------------------------
+1. Kliknij dwa razy na plik:  start.bat
+2. Otworzy się czarne okno z adresami - NIE zamykaj go.
+3. Gdy system zapyta o Zaporę (Firewall) - ZEZWÓL.
+4. Na telefonie (ta sama sieć WiFi co komputer) otwórz
+   adres pokazany w oknie, np.:  http://192.168.1.50:8000
+5. Aby mieć aplikację jak na telefonie:
+   - Android: menu przeglądarki (3 kropki) ->
+     "Dodaj do ekranu głównego"
+   - iPhone: przycisk Udostępnij -> "Dodaj do ekranu głównego"
+6. Na siłowni działa OFFLINE (bez internetu).
+
+Nie musisz instalować Pythona - serwer używa wbudowanych
+narzędzi Windows.
+
+Jeśli po uruchomieniu okno pokazuje błąd "port zajęty":
+zamknij programy używające portu 8000 albo zmień w
+pliku start.bat i serve.ps1 liczbę 8000 na inną (np. 8080).
+
+
+2. CO JEST W APLIKACJI
+----------------------
+* KALENDARZ - zobacz dni, w których trenowałeś (kropki:
+  pomarańczowa = siłownia, niebieska = bieganie,
+  zielona = zdrowie). Kliknij dzień, aby zobaczyć wpisy.
+  Możesz je edytować i usuwać.
+
+* ROZPISKA - lista Twoich planów:
+  Siłownia: Plecy+Biceps, Nogi, Klatka+Barki, Plyometria
+  Bieganie: Easy Run, Long Run, Podbiegi
+  Przycisk "Edytuj ćwiczenia" pozwala dodać/usunąć
+  ćwiczenia w planie.
+
+* TRENING - zapis treningu:
+  - Wybierz "Siłownia" albo "Bieganie"
+  - Siłownia: wybierz plan, "Dodaj ćwiczenie", a potem
+    dla każdej serii wpisz ciężar (kg) i liczbę powtórzeń.
+    "Dodaj serię" = kolejna seria.
+  - Bieganie: wybierz typ (Easy Run/Long Run/Podbiegi),
+    wpisz czas i dystans. Tempo liczy się samo.
+  - Ustaw datę (domyślnie dziś) i zapisz.
+
+* POSTĘP - wykresy zmian:
+  - Siłownia: wybierz ćwiczenie i zobacz objętość (kg)
+    albo maksymalny ciężar na przestrzeni czasu.
+  - Bieganie: dystans po treningach danego typu.
+  - Zdrowie: zmiany wagi, body fat, mięśni i tłuszczu.
+
+* ZDROWIE - wpisuj z kartki z siłowni:
+  waga (kg), body fat (%), mięśnie (kg), tłuszcz (kg).
+
+
+3. KOPIA ZAPASOWA (WAŻNE!)
+---------------------------
+Dane trzymają się w telefonie. Aby ich nie stracić:
+- Zębate kółko (prawy górny róg) -> "Pobierz plik .json"
+- Wyślij ten plik sobie mailem (albo na komputerek).
+- Przywracanie: zębatka -> "Wybierz plik .json".
+
+
+4. PLIKI APLIKACJI
+------------------
+Aplikacja.html  - CAŁA aplikacja w jednym pliku (otwieraj dwuklikiem)
+index.html, style.css, app.js - ta sama aplikacja w osobnych plikach
+manifest.webmanifest, sw.js, icons/ - tryb offline/ikona
+start.bat, serve.ps1 - serwer do używania aplikacji na telefonie
