@@ -17,6 +17,8 @@ Tracker treningów siłowych, biegowych i statystyk zdrowia — jako **instalowa
 - **Zdrowie** — waga, tkanka tłuszczowa, mięśnie, zdjęcia sylwetki
 - **Wiele profili** — osobne dane dla każdego użytkownika
 - **Ustawienia** — motyw ciemny/jasny, kolor akcentu, maskotka, kopia zapasowa (plik .json), raport PDF (30 dni), przypomnienia o treningu, sekcja „Uwagi i poprawki"
+- **Nowości** — sekcja w ustawieniach pokazująca, co zmieniło się w najnowszej wersji (przy nowej wersji na ikonie ustawień pojawia się kropka)
+- **Aktualizuj aplikację** — przycisk w ustawieniach pobiera najnowszą wersję bez utraty danych
 
 ## Instalacja na telefonie
 
@@ -54,7 +56,23 @@ zdjecia/            — zasoby
 
 ## Dane
 
-Dane zapisywane są w **localStorage** przeglądarki (osobno dla każdego profilu). Zalecane jest regularne robienie **kopii zapasowej** (Ustawienia → Kopia zapasowa danych → „Pobierz plik .json") — pozwala przenieść cały postęp na nowy telefon.
+Dane zapisywane są w **localStorage** przeglądarki (osobno dla każdego profilu) — czyli wyłącznie na Twoim urządzeniu. Każdy, kto otworzy aplikację (np. znajomy z linkiem), ma **własną, niezależną kopię** danych — nikt inny ich nie widzi.
+
+Przy każdym zapisie tworzona jest też **automatyczna kopia bezpieczeństwa** — jeśli zapis ulegnie uszkodzeniu lub zniknie, aplikacja sama odzyska dane („Dane odzyskane z kopii bezpieczeństwa"). Aktualizacje aplikacji nigdy nie usuwają danych.
+
+### Przenoszenie danych na inny komputer/telefon
+
+Każde urządzenie to osobne miejsce z danymi, więc przenosisz je ręcznie przez plik kopii zapasowej:
+
+**1. Na urządzeniu, z którego chcesz zabrać dane:**
+- Ustawienia → **Kopia zapasowa danych** → **„Pobierz plik .json"**
+- Wyślij plik na nowe urządzenie (mail, messenger, kabel USB)
+
+**2. Na nowym urządzeniu (np. komputerze):**
+- Otwórz aplikację i utwórz profil (np. tak samo nazwany jak stary)
+- Ustawienia → **Przywróć z kopii** → **„Wybierz plik .json"** → wybierz przesłany plik
+
+**Pamiętaj:** to ręczna synchronizacja. Jeśli coś dodasz na telefonie, nie pojawi się automatycznie na komputerze — trzeba ponownie wyeksportować i zaimportować.
 
 ## Aktualizacje
 
