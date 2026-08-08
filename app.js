@@ -9,7 +9,7 @@ const MASCOT_KEY = 'betternm_mascot_v1';
 const FEEDBACK_KEY = 'betternm_feedback_v1';
 const DATA_PREFIX = 'betternm_data_v1_';
 
-const APP_VERSION = 'beta 0.1';
+const APP_VERSION = 'beta 0.2';
 
 const ACCENTS = {
   orange: { label: 'Pomarańczowy', color: '#fc4c02' },
@@ -27,7 +27,25 @@ const DEFAULT_PROFILES = [
   { id: 'natalia', name: 'Natalia' }
 ];
 
-function defaultProfiles() { return JSON.parse(JSON.stringify(DEFAULT_PROFILES)); }
+function hasLegacyData() {
+  try {
+    if (localStorage.getItem(STORAGE_KEY)) return true;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf(DATA_PREFIX) === 0) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function defaultProfiles() {
+  const defs = JSON.parse(JSON.stringify(DEFAULT_PROFILES));
+  if (hasLegacyData()) {
+    saveProfiles(defs);
+    return defs;
+  }
+  return [];
+}
 function getProfiles() {
   try {
     const p = JSON.parse(localStorage.getItem(PROFILES_KEY) || 'null');
@@ -40,6 +58,7 @@ function saveProfiles(profiles) {
 }
 function activeProfile() {
   const p = getProfiles();
+  if (!p.length) return { id: '', name: '' };
   const id = localStorage.getItem(ACTIVE_KEY);
   return p.find(x => x.id === id) || p[0];
 }
@@ -201,6 +220,11 @@ function load() {
       const d = JSON.parse(raw);
       if (d && Array.isArray(d.plans) && Array.isArray(d.logs)) return normalizeData(d);
     } catch (e) {}
+    const bk = tryBackup(activeProfile().id, key);
+    if (bk) return bk;
+  } else {
+    const bk = tryBackup(activeProfile().id, key);
+    if (bk) return bk;
   }
   try {
     const legacyRaw = localStorage.getItem(STORAGE_KEY);
@@ -213,6 +237,20 @@ function load() {
     }
   } catch (e) {}
   return defaultData();
+}
+
+function tryBackup(id, key) {
+  const bkRaw = localStorage.getItem(backupKey(id));
+  if (!bkRaw) return null;
+  try {
+    const bk = JSON.parse(bkRaw);
+    if (bk && Array.isArray(bk.plans) && Array.isArray(bk.logs)) {
+      localStorage.setItem(key, bkRaw);
+      setTimeout(() => toast('Dane odzyskane z kopii bezpieczeństwa'), 300);
+      return normalizeData(bk);
+    }
+  } catch (e) {}
+  return null;
 }
 
 function migratePlans(d) {
@@ -234,8 +272,14 @@ function migratePlans(d) {
 
 if (migratePlans(data)) save();
 
+function backupKey(id) { return DATA_PREFIX + id + '_bk'; }
+
 function save() {
-  try { localStorage.setItem(profileDataKey(activeProfile().id), JSON.stringify(data)); }
+  try {
+    const k = profileDataKey(activeProfile().id);
+    localStorage.setItem(k, JSON.stringify(data));
+    localStorage.setItem(backupKey(activeProfile().id), JSON.stringify(data));
+  }
   catch (e) { toast('Błąd zapisu danych!'); }
 }
 
@@ -373,6 +417,7 @@ function renderProfileScreen() {
   if (!list) return;
   const profiles = getProfiles();
   const current = activeProfile();
+  const first = profiles.length === 0;
   list.innerHTML = profiles.map(p => {
     const initial = (p.name.trim().charAt(0) || '?').toUpperCase();
     return '<button type="button" class="profile-item' + (p.id === current.id ? ' active' : '') + '" data-profile="' + esc(p.id) + '">' +
@@ -381,8 +426,31 @@ function renderProfileScreen() {
       '<span class="profile-check">' + (p.id === current.id ? '&#10003;' : '') + '</span>' +
       '</button>';
   }).join('');
+  const addWrap = document.getElementById('profile-add-wrap');
+  const addBtn = document.getElementById('profile-add-btn');
+  const sub = document.getElementById('profile-sub');
+  if (first) {
+    addWrap.classList.remove('hidden');
+    if (addBtn) addBtn.classList.add('hidden');
+    if (sub) sub.textContent = 'Stwórz swój profil, aby rozpocząć';
+    setTimeout(() => { const inp = document.getElementById('profile-new-name'); if (inp) inp.focus(); }, 80);
+  } else {
+    addWrap.classList.add('hidden');
+    if (addBtn) addBtn.classList.remove('hidden');
+    if (sub) sub.textContent = 'Wybierz profil, aby kontynuować';
+  }
   const meta = document.getElementById('profile-screen-meta');
-  if (meta) meta.textContent = profiles.length + ' profil' + (profiles.length === 1 ? '' : 'e') + ' na tym urządzeniu';
+  if (meta) {
+    if (first) {
+      meta.textContent = 'Nie masz jeszcze żadnego profilu — utwórz pierwszy.';
+    } else if (profiles.length === 1) {
+      meta.textContent = '1 profil na tym urządzeniu';
+    } else if (profiles.length % 10 >= 2 && profiles.length % 10 <= 4 && (profiles.length % 100 < 12 || profiles.length % 100 > 14)) {
+      meta.textContent = profiles.length + ' profile na tym urządzeniu';
+    } else {
+      meta.textContent = profiles.length + ' profili na tym urządzeniu';
+    }
+  }
 }
 
 function openProfileScreen() {
@@ -2631,6 +2699,18 @@ document.getElementById('mascot-none').addEventListener('click', () => applyMasc
 
 let deferredPrompt = null;
 
+function updateApp() {
+  toast('Sprawdzam aktualizacje…');
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg) reg.update();
+    });
+    setTimeout(() => location.reload(), 1800);
+  } else {
+    setTimeout(() => location.reload(), 300);
+  }
+}
+
 function setupInstall() {
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
@@ -2643,6 +2723,7 @@ function setupInstall() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
   });
+  document.getElementById('settings-update').addEventListener('click', updateApp);
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
     const btn = document.getElementById('install-btn');

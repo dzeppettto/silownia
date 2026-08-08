@@ -277,6 +277,7 @@
           <p class="field-hint" id="install-hint">Zainstaluj BetterNM na telefonie — działa jak zwykła aplikacja, bez przeglądarki.</p>
           <div class="modal-actions">
             <button class="btn primary hidden" id="install-btn">Zainstaluj aplikację</button>
+            <button class="btn secondary" id="settings-update">Aktualizuj aplikację</button>
           </div>
           <ul class="install-guide">
             <li><b>Android (Chrome):</b> menu ⋮ → „Dodaj do ekranu głównego" lub „Zainstaluj aplikację".</li>
@@ -315,7 +316,7 @@
   <div class="profile-screen hidden" id="profile-screen">
     <div class="profile-card">
       <img class="profile-banner" src="logo.png" alt="BetterNM">
-      <p class="profile-sub">Wybierz profil, aby kontynuować</p>
+      <p class="profile-sub" id="profile-sub">Wybierz profil, aby kontynuować</p>
       <div id="profile-list"></div>
       <div id="profile-add-wrap" class="hidden">
         <input id="profile-new-name" type="text" placeholder="Imię / nazwa profilu" maxlength="24" autocomplete="off">
