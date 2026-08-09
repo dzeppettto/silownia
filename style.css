@@ -345,6 +345,22 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 34px; }
 .plan-actions { display: flex; gap: 10px; margin-top: 12px; }
 .plan-actions .btn { flex: 1; }
 
+/* Tagi mięśni */
+.plan-tags { margin: 8px 0 2px; display: flex; flex-wrap: wrap; gap: 6px; }
+.badge.tag {
+  margin: 0;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 600;
+}
+.plan-filters { margin: 6px 0 14px; }
+.plan-filters .chip { padding: 8px 13px; font-size: 13px; border-radius: 20px; }
+.tag-chip { padding: 8px 13px !important; font-size: 13px !important; }
+#plan-tags-list { margin: 6px 0 4px; }
+
 /* ===== Chips ===== */
 .chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 12px 0; }
 .chip {
@@ -1287,6 +1303,34 @@ body { isolation: isolate; }
 }
 [data-mascot="jamnik"] .jamnik-bg { display: block; }
 [data-theme="light"] .jamnik-bg g { fill-opacity: 0.13; stroke-opacity: 0.13; }
+
+/* Maskotka w nagłówku */
+.header-mascot {
+  display: none;
+  color: var(--accent);
+  line-height: 0;
+  flex: 0 0 auto;
+  animation: fade 0.3s ease;
+}
+.header-mascot svg {
+  width: 30px;
+  height: auto;
+  filter: drop-shadow(0 2px 6px rgba(var(--accent-rgb), 0.45));
+}
+[data-mascot="jamnik"] .header-mascot { display: block; }
+
+/* Maskotka w pustych stanach */
+.jamnik-empty {
+  text-align: center;
+  padding: 22px 16px;
+  color: var(--muted);
+}
+.jamnik-empty .jamnik-ico {
+  color: var(--accent);
+  margin: 0 auto 10px;
+  display: block;
+  opacity: 0.9;
+}
 
 /* ===== Blokada PIN ===== */
 .lock-screen {

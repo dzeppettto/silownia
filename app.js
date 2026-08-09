@@ -12,14 +12,14 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.5';
+const APP_VERSION = 'beta 0.6';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.5',
+  version: 'beta 0.6',
   changes: [
-    'Blokada PIN — każdy profil może mieć własny PIN (4 cyfry). Po włączeniu PIN-u wybranie profilu wymaga jego podania',
-    'Przycisk „Ustaw PIN” w Ustawieniach → Profil (ustawienie, zmiana i usunięcie PIN-u)',
-    'Sekcja „Zainstaluj aplikację” przeniesiona na sam dół ustawień'
+    'Kategorie mięśni: każda rozpiska siłowa ma teraz tagi mięśni (Plecy, Klatka, Nogi itd.)',
+    'Rozpiska: filtr po grupach mięśniowych — można wybrać kilka naraz',
+    'Motyw jamniczkowy: maskotka w nagłówku i w pustych dniach + jamniczkowe wskazówki'
   ]
 };
 
@@ -157,18 +157,35 @@ const ICONS = {
 
 function icon(name) { return ICONS[name] || ICONS.dumbbell; }
 
+function jamnikSVG(size) {
+  size = size || 44;
+  return '<svg class="jamnik-ico" width="' + size + '" height="' + Math.round(size * 0.55) + '" viewBox="0 0 120 66" fill="currentColor" aria-hidden="true">' +
+    '<rect x="40" y="20" width="58" height="17" rx="8.5"/>' +
+    '<path d="M94 26 q16 -1 19 -15" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>' +
+    '<circle cx="32" cy="23" r="11"/>' +
+    '<rect x="9" y="25" width="22" height="10" rx="5"/>' +
+    '<path d="M28 13 q-7 -7 4 -7 q7 0 3 9 q-1 3 -7 1z"/>' +
+    '<circle cx="9" cy="29" r="2.4"/>' +
+    '<rect x="46" y="37" width="7" height="16" rx="3.5"/>' +
+    '<rect x="60" y="37" width="7" height="16" rx="3.5"/>' +
+    '<rect x="74" y="37" width="7" height="16" rx="3.5"/>' +
+    '<rect x="88" y="37" width="7" height="16" rx="3.5"/></svg>';
+}
+
+function mascotOn() { return getMascot() === 'jamnik'; }
+
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
 const DOWS = ['Pn','Wt','Śr','Cz','Pt','So','Nd'];
 
 const DEFAULT_PLANS = [
-  { id: 'plecy-biceps', name: 'Plecy + Biceps', category: 'silownia', desc: '', exercises: [
+  { id: 'plecy-biceps', name: 'Plecy + Biceps', category: 'silownia', desc: '', tags: ['plecy', 'biceps'], exercises: [
     'Ściąganie drążka wyciągu górnego do klatki (Lat Pulldown)',
     'Odwrotne rozpiętki na maszynie (Reverse Pec Deck)',
     'Wiosłowanie sztangą w opadzie tułowia (Bent-Over Barbell Row)',
     'Ściąganie linki jednorącz w klęku (Kneeling Single-Arm High-to-Low Cable Pulldown)',
     'Uginanie ramion na linkach (Cable Bicep Curl)'
   ]},
-  { id: 'nogi', name: 'Nogi', category: 'silownia', desc: '', exercises: [
+  { id: 'nogi', name: 'Nogi', category: 'silownia', desc: '', tags: ['nogi', 'posladki', 'lydki'], exercises: [
     'Przysiad ze sztangą + wyskoki (Barbell Squat + Jump Squats)',
     'Hip Thrust ze sztangą (Barbell Hip Thrust)',
     'Przysiady bułgarskie (Bulgarian Split Squats)',
@@ -176,14 +193,14 @@ const DEFAULT_PLANS = [
     'Prostowanie nóg na maszynie / Zginanie nóg siedząc (Leg Extension / Seated Leg Curl)',
     'Martwy ciąg rumuński na Smithie (Smith Machine RDL)'
   ]},
-  { id: 'klatka-barki', name: 'Klatka + Barki', category: 'silownia', desc: '', exercises: [
+  { id: 'klatka-barki', name: 'Klatka + Barki', category: 'silownia', desc: '', tags: ['klatka', 'barki', 'triceps'], exercises: [
     'Wyciskanie sztangi na ławce płaskiej (Barbell Bench Press)',
     'Rozpiętki na maszynie (Pec Deck Fly)',
     'Unoszenie ramion bokiem (Modified Lateral Raises)',
     'Prostowanie ramion na triceps (Cable Triceps Pushdown)',
     'Dipy na poręczach (Dips)'
   ]},
-  { id: 'plyometria', name: 'Plyometria + Stabilizacja', category: 'silownia', desc: '', exercises: [
+  { id: 'plyometria', name: 'Plyometria + Stabilizacja', category: 'silownia', desc: '', tags: ['nogi', 'posladki', 'brzuch'], exercises: [
     'Naprzemienne boczne przeskoki jednonóż (Alternating Lateral Single-Leg Hops)',
     'Przeskoki w wykroku (Jumping Lunges)',
     'Sprężyste podskoki jednonóż (Single-Leg Pogo Hops)',
@@ -200,6 +217,23 @@ const DEFAULT_PLANS = [
   { id: 'long-run', name: 'Long Run', category: 'bieganie', desc: 'Długi spokojny wybieganie.', exercises: [] },
   { id: 'podbiegi', name: 'Podbiegi', category: 'bieganie', desc: 'Bieg z podbiegami i interwałami.', exercises: [] }
 ];
+
+const MUSCLE_TAGS = [
+  { key: 'plecy', label: 'Plecy' },
+  { key: 'klatka', label: 'Klatka' },
+  { key: 'barki', label: 'Barki' },
+  { key: 'biceps', label: 'Biceps' },
+  { key: 'triceps', label: 'Triceps' },
+  { key: 'przedramiona', label: 'Przedramiona' },
+  { key: 'nogi', label: 'Nogi' },
+  { key: 'posladki', label: 'Pośladki' },
+  { key: 'lydki', label: 'Łydki' },
+  { key: 'brzuch', label: 'Brzuch' }
+];
+
+function muscleTag(key) { return MUSCLE_TAGS.find(t => t.key === key); }
+function muscleTagLabel(key) { const t = muscleTag(key); return t ? t.label : key; }
+function planTags(p) { return Array.isArray(p.tags) ? p.tags : []; }
 
 function defaultData() {
   return {
@@ -311,7 +345,8 @@ const state = {
   sumYear: 0,
   sumMonth: 0,
   prog: { ex: '', mode: 'volume', run: 'easy-run', metric: 'weight', km: 5, prEx: '' },
-  pinEntry: ''
+  pinEntry: '',
+  planFilter: []
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -677,6 +712,16 @@ function dailyTips() {
     tips.push('Nadchodzą zawody: ' + nextRace.name + ' (' + dayTxt + ').');
   }
   if (!tips.length) tips.push('Brak aktywnego tygodnia — wróć do treningów!');
+  if (mascotOn()) {
+    const jtips = [
+      'Jamniczek wierci ogonem — czas na trening!',
+      'Jamniczek mówi: seria za serią, ogon do góry.',
+      'Jamniczek radzi: zacznij lekko, a skończysz mocno.',
+      'Jamniczek czeka na wspólny trening. Chodź!',
+      'Jamniczek przypomina: regeneracja to też trening.'
+    ];
+    tips.unshift(jtips[new Date().getDate() % jtips.length]);
+  }
   return tips.slice(0, 4);
 }
 
@@ -688,7 +733,9 @@ function renderDayDetail() {
   const runs = data.runs.filter(r => r.date === ds);
   const health = data.health.filter(h => h.date === ds);
   if (logs.length + runs.length + health.length === 0) {
-    wrap.innerHTML = '<div class="card day-empty">Brak wpisów w tym dniu.<br>Dodaj trening lub wpis zdrowia.</div>';
+    wrap.innerHTML = mascotOn()
+      ? '<div class="card day-empty jamnik-empty">' + jamnikSVG(58) + '<div>Jamniczek odespał ten dzień.<br>Dodaj trening albo wpis zdrowia!</div></div>'
+      : '<div class="card day-empty">Brak wpisów w tym dniu.<br>Dodaj trening lub wpis zdrowia.</div>';
     return;
   }
   let html = '<div class="day-block"><h3>' + fmtLongDate(ds) + '</h3>';
@@ -887,8 +934,26 @@ function renderPlans() {
   const silownia = gymPlans();
   const bieganie = runPlans();
   html += '<h3 class="tab-subtitle">Siłownia</h3>';
-  silownia.forEach((p, i) => {
+
+  const usedTags = MUSCLE_TAGS.filter(t => silownia.some(p => planTags(p).includes(t.key)));
+  const filter = state.planFilter || [];
+  const filtered = filter.length
+    ? silownia.filter(p => planTags(p).some(k => filter.includes(k)))
+    : silownia;
+
+  if (usedTags.length) {
+    html += '<div class="chips plan-filters">' +
+      '<button class="chip' + (filter.length === 0 ? ' active' : '') + '" data-plan-filter="__all">Wszystkie</button>' +
+      usedTags.map(t => '<button class="chip' + (filter.includes(t.key) ? ' active' : '') + '" data-plan-filter="' + t.key + '">' + esc(t.label) + '</button>').join('') +
+      '</div>';
+  }
+  if (!filtered.length) {
+    html += '<div class="chart-empty">' + (filter.length ? 'Brak planów dla wybranych kategorii mięśni.' : 'Brak planów siłowych.') + '</div>';
+  }
+  filtered.forEach(p => {
+    const tagHtml = planTags(p).map(k => '<span class="badge tag">' + esc(muscleTagLabel(k)) + '</span>').join('');
     html += '<div class="card plan-gym"><h3>' + esc(p.name) + '<span class="badge gym">Siłownia</span></h3>' +
+      (tagHtml ? '<div class="plan-tags">' + tagHtml + '</div>' : '') +
       '<ol class="ex-list">' + p.exercises.map(e => '<li>' + esc(e) + '</li>').join('') + '</ol>' +
       '<div class="plan-actions">' +
       '<button class="btn primary small" data-startplan="' + p.id + '">Rozpocznij trening</button>' +
@@ -912,6 +977,7 @@ function openPlanEdit(planId) {
   document.getElementById('plan-edit-desc').value = p.desc || '';
   document.getElementById('plan-edit-text').value = (p.exercises || []).join('\n');
   document.getElementById('plan-edit-text').dataset.plan = planId;
+  setPlanTagPicker(p);
   const del = document.getElementById('plan-edit-delete');
   if (del) { del.style.display = ''; del.dataset.plan = planId; }
   openModal('modal-plan-edit');
@@ -924,9 +990,41 @@ function openPlanAdd() {
   document.getElementById('plan-edit-desc').value = '';
   document.getElementById('plan-edit-text').value = '';
   document.getElementById('plan-edit-text').dataset.plan = '';
+  setPlanTagPicker(null);
   const del = document.getElementById('plan-edit-delete');
   if (del) { del.style.display = 'none'; del.dataset.plan = ''; }
   openModal('modal-plan-edit');
+}
+
+function renderPlanTagPicker() {
+  const box = document.getElementById('plan-tags-list');
+  if (!box) return;
+  box.innerHTML = MUSCLE_TAGS.map(t =>
+    '<button type="button" class="chip tag-chip" data-tag="' + t.key + '">' + esc(t.label) + '</button>'
+  ).join('');
+}
+
+function setPlanTagPicker(plan) {
+  renderPlanTagPicker();
+  const tags = plan ? planTags(plan) : [];
+  const box = document.getElementById('plan-tags-list');
+  if (box) box.querySelectorAll('[data-tag]').forEach(b => b.classList.toggle('active', tags.includes(b.dataset.tag)));
+  syncPlanTagPicker();
+}
+
+function syncPlanTagPicker() {
+  const box = document.getElementById('plan-tags-box');
+  if (!box) return;
+  const cat = document.getElementById('plan-edit-cat').value;
+  box.classList.toggle('hidden', cat !== 'silownia');
+}
+
+function selectedPlanTags() {
+  const box = document.getElementById('plan-tags-list');
+  if (!box) return [];
+  const out = [];
+  box.querySelectorAll('[data-tag].active').forEach(b => out.push(b.dataset.tag));
+  return out;
 }
 
 function savePlanFromModal() {
@@ -934,6 +1032,7 @@ function savePlanFromModal() {
   const cat = document.getElementById('plan-edit-cat').value === 'bieganie' ? 'bieganie' : 'silownia';
   const desc = document.getElementById('plan-edit-desc').value.trim();
   const exercises = document.getElementById('plan-edit-text').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const tags = cat === 'silownia' ? selectedPlanTags() : [];
   if (!name) { toast('Podaj nazwę rozpiska'); return; }
   const existingId = document.getElementById('plan-edit-text').dataset.plan;
   const existing = existingId ? planById(existingId) : null;
@@ -942,8 +1041,9 @@ function savePlanFromModal() {
     existing.category = cat;
     existing.desc = desc;
     existing.exercises = exercises;
+    existing.tags = tags;
   } else {
-    data.plans.push({ id: 'custom-' + uid(), name: name, category: cat, desc: desc, exercises: exercises });
+    data.plans.push({ id: 'custom-' + uid(), name: name, category: cat, desc: desc, tags: tags, exercises: exercises });
   }
   save();
   closeModal('modal-plan-edit');
@@ -1036,6 +1136,12 @@ function renderTraining() {
     html += '<div class="chips">' + gymPlans().map(p =>
       '<button class="chip' + (c.planId === p.id ? ' active' : '') + '" data-plan="' + p.id + '">' + esc(p.name) + '</button>'
     ).join('') + '</div>';
+
+    const selPlan = planById(c.planId);
+    const selTags = selPlan ? planTags(selPlan) : [];
+    if (selTags.length) {
+      html += '<div class="plan-tags">' + selTags.map(k => '<span class="badge tag">' + esc(muscleTagLabel(k)) + '</span>').join('') + '</div>';
+    }
 
     if (!c.exercises.length) {
       html += '<div class="chart-empty">Wybierz ćwiczenia do tego treningu:</div>';
@@ -2515,6 +2621,18 @@ function bindEvents() {
   });
 
   document.getElementById('plan-list').addEventListener('click', e => {
+    const pf = e.target.closest('[data-plan-filter]');
+    if (pf) {
+      const key = pf.dataset.planFilter;
+      if (key === '__all') {
+        state.planFilter = [];
+      } else {
+        const cur = state.planFilter || [];
+        state.planFilter = cur.includes(key) ? cur.filter(k => k !== key) : cur.concat(key);
+      }
+      renderPlans();
+      return;
+    }
     const s = e.target.closest('[data-startplan]');
     if (s) { startPlanWorkout(s.dataset.startplan); return; }
     const b = e.target.closest('[data-editplan]');
@@ -2526,6 +2644,11 @@ function bindEvents() {
   document.getElementById('plan-edit-delete').addEventListener('click', () => {
     const del = document.getElementById('plan-edit-delete');
     if (del.dataset.plan) deletePlan(del.dataset.plan);
+  });
+  document.getElementById('plan-edit-cat').addEventListener('change', syncPlanTagPicker);
+  document.getElementById('plan-tags-list').addEventListener('click', e => {
+    const tg = e.target.closest('[data-tag]');
+    if (tg) { tg.classList.toggle('active'); return; }
   });
 
   const form = document.getElementById('training-form');
