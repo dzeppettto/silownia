@@ -1287,3 +1287,68 @@ body { isolation: isolate; }
 }
 [data-mascot="jamnik"] .jamnik-bg { display: block; }
 [data-theme="light"] .jamnik-bg g { fill-opacity: 0.13; stroke-opacity: 0.13; }
+
+/* ===== Blokada PIN ===== */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lock-screen.shake .lock-card { animation: pin-shake 0.4s; }
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.lock-card {
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+.lock-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+.lock-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+.lock-hint { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+.pin-dots { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; }
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.lock-err { color: var(--danger); font-size: 13px; min-height: 18px; margin: 0 0 8px; }
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+.pin-key {
+  height: 60px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card2);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pin-key:active { background: var(--card); }
+.pin-key.empty { visibility: hidden; border: none; background: none; }
+.btn.ghost-btn { background: transparent; border: none; color: var(--muted); }
+.btn.ghost-btn:active { background: var(--card2); }
+.err-hint { color: var(--danger) !important; }

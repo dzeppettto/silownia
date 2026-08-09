@@ -12,13 +12,14 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.4';
+const APP_VERSION = 'beta 0.5';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.4',
+  version: 'beta 0.5',
   changes: [
-    'Uwagi i poprawki: przycisk „Wyślij do autora” — Twoje uwagi trafiają bezpośrednio do dewelopera (jako Issue na GitHubie)',
-    'Poprawiona aktualizacja na Safari/iPhone — wersja pobiera się nawet, gdy service worker jeszcze nie przejął strony'
+    'Blokada PIN — każdy profil może mieć własny PIN (4 cyfry). Po włączeniu PIN-u wybranie profilu wymaga jego podania',
+    'Przycisk „Ustaw PIN” w Ustawieniach → Profil (ustawienie, zmiana i usunięcie PIN-u)',
+    'Sekcja „Zainstaluj aplikację” przeniesiona na sam dół ustawień'
   ]
 };
 
@@ -309,7 +310,8 @@ const state = {
   editRaceId: null,
   sumYear: 0,
   sumMonth: 0,
-  prog: { ex: '', mode: 'volume', run: 'easy-run', metric: 'weight', km: 5, prEx: '' }
+  prog: { ex: '', mode: 'volume', run: 'easy-run', metric: 'weight', km: 5, prEx: '' },
+  pinEntry: ''
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -482,6 +484,7 @@ function switchProfile(id) {
   closeProfileScreen();
   showTab('kalendarz');
   toast('Profil: ' + activeProfile().name);
+  if (profileHasPin(activeProfile())) openLockScreen();
 }
 
 function createProfile() {
@@ -2716,6 +2719,17 @@ function bindEvents() {
     closeModal('modal-settings');
     openProfileScreen();
   });
+  document.getElementById('settings-pin').addEventListener('click', openPinModal);
+  document.getElementById('pin-save').addEventListener('click', savePin);
+  document.getElementById('pin-remove').addEventListener('click', removePin);
+  document.querySelectorAll('.pin-key').forEach(k => k.addEventListener('click', () => pinPress(k.dataset.pin)));
+  document.getElementById('lock-cancel').addEventListener('click', () => {
+    closeLockScreen();
+    openProfileScreen();
+  });
+  document.getElementById('pin-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') savePin();
+  });
 document.getElementById('theme-dark').addEventListener('click', () => applyTheme('dark'));
 document.getElementById('theme-light').addEventListener('click', () => applyTheme('light'));
 document.getElementById('accent-swatches').addEventListener('click', e => {
@@ -2812,6 +2826,7 @@ function init() {
   bindEvents();
   setupInstall();
   updateProfileBadge();
+  updatePinButton();
   renderChangelog();
   refreshUpdateDot();
   fillReminderSettings();
@@ -2822,6 +2837,123 @@ function init() {
   if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+}
+
+/* ==================== BLOKADA PIN ==================== */
+
+function profileHasPin(p) {
+  return !!p && /^\d{4}$/.test(String(p.pin || ''));
+}
+
+function setProfilePin(pin) {
+  const profiles = getProfiles();
+  const p = profiles.find(x => x.id === activeProfile().id);
+  if (!p) return;
+  p.pin = String(pin || '');
+  saveProfiles(profiles);
+  renderProfileScreen();
+  updatePinButton();
+}
+
+function openLockScreen() {
+  const p = activeProfile();
+  const nameEl = document.getElementById('lock-profile-name');
+  if (nameEl) nameEl.textContent = p.name;
+  state.pinEntry = '';
+  renderPinDots();
+  const err = document.getElementById('lock-err');
+  if (err) err.classList.add('hidden');
+  const lock = document.getElementById('lock-screen');
+  if (lock) lock.classList.remove('hidden');
+  closeModal('modal-settings');
+  closeProfileScreen();
+}
+
+function closeLockScreen() {
+  const lock = document.getElementById('lock-screen');
+  if (lock) lock.classList.add('hidden');
+}
+
+function renderPinDots() {
+  const dots = document.querySelectorAll('#pin-dots .pin-dot');
+  const filled = Math.min(state.pinEntry.length, 4);
+  dots.forEach((d, i) => d.classList.toggle('filled', i < filled));
+}
+
+function pinPress(key) {
+  if (key === 'back') {
+    state.pinEntry = state.pinEntry.slice(0, -1);
+    renderPinDots();
+    return;
+  }
+  if (!/^\d$/.test(key) || state.pinEntry.length >= 4) return;
+  state.pinEntry += key;
+  renderPinDots();
+  if (state.pinEntry.length === 4) setTimeout(checkPin, 180);
+}
+
+function checkPin() {
+  if (state.pinEntry === activeProfile().pin) {
+    closeLockScreen();
+    return;
+  }
+  const err = document.getElementById('lock-err');
+  if (err) err.classList.remove('hidden');
+  state.pinEntry = '';
+  renderPinDots();
+  const lock = document.getElementById('lock-screen');
+  if (lock) {
+    lock.classList.remove('shake');
+    void lock.offsetWidth;
+    lock.classList.add('shake');
+  }
+}
+
+function updatePinButton() {
+  const btn = document.getElementById('settings-pin');
+  if (btn) {
+    const has = profileHasPin(activeProfile());
+    btn.textContent = has ? 'Zmień PIN' : 'Ustaw PIN';
+    const removeBtn = document.getElementById('pin-remove');
+    if (removeBtn) removeBtn.classList.toggle('hidden', !has);
+    const title = document.getElementById('pin-modal-title');
+    if (title) title.textContent = has ? 'Zmień PIN' : 'Ustaw PIN';
+  }
+}
+
+function openPinModal() {
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-confirm').value = '';
+  const err = document.getElementById('pin-err');
+  if (err) err.classList.add('hidden');
+  updatePinButton();
+  openModal('modal-pin');
+  setTimeout(() => document.getElementById('pin-input').focus(), 80);
+}
+
+function savePin() {
+  const a = document.getElementById('pin-input').value.trim();
+  const b = document.getElementById('pin-confirm').value.trim();
+  const err = document.getElementById('pin-err');
+  if (!/^\d{4}$/.test(a)) {
+    err.textContent = 'PIN musi mieć dokładnie 4 cyfry.';
+    err.classList.remove('hidden');
+    return;
+  }
+  if (a !== b) {
+    err.textContent = 'PIN-y nie są takie same.';
+    err.classList.remove('hidden');
+    return;
+  }
+  setProfilePin(a);
+  closeModal('modal-pin');
+  toast('PIN ustawiony dla profilu ' + activeProfile().name);
+}
+
+function removePin() {
+  setProfilePin('');
+  closeModal('modal-pin');
+  toast('PIN usunięty');
 }
 
 window.addEventListener('resize', () => {

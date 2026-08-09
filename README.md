@@ -17,6 +17,7 @@ Tracker treningów siłowych, biegowych i statystyk zdrowia — jako **instalowa
 - **Zdrowie** — waga, tkanka tłuszczowa, mięśnie, zdjęcia sylwetki
 - **Wiele profili** — osobne dane dla każdego użytkownika
 - **Ustawienia** — motyw ciemny/jasny, kolor akcentu, maskotka, kopia zapasowa (plik .json), raport PDF (30 dni), przypomnienia o treningu, sekcja „Uwagi i poprawki"
+- **Blokada PIN** — każdy profil może mieć własny PIN (4 cyfry); po włączeniu wybranie profilu wymaga jego podania (Ustawienia → Profil → „Ustaw PIN")
 - **Nowości** — sekcja w ustawieniach pokazująca, co zmieniło się w najnowszej wersji (przy nowej wersji na ikonie ustawień pojawia się kropka)
 - **Aktualizuj aplikację** — przycisk w ustawieniach pobiera najnowszą wersję bez utraty danych
 
@@ -52,6 +53,7 @@ sw.js               — service worker (cache offline)
 icons/              — ikony aplikacji (192, 180, 512 px)
 logo.png            — logo
 zdjecia/            — zasoby
+worker/             — osobny worker „silownia-feedback" (uwagi → Issue na GitHubie)
 ```
 
 ## Dane
