@@ -12,14 +12,16 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.7';
+const APP_VERSION = 'beta 0.8';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.7',
+  version: 'beta 0.8',
   changes: [
-    'Trening: zamiast zakładek z planami — zaznaczasz osobno mięśnie, które ćwiczyłeś',
-    'Trening: „Dodaj z rozpiski” uzupełnia ćwiczenia i automatycznie zaznacza ich mięśnie',
-    'Nowa kategoria mięśni: Tyłek'
+    'Rozpiska: nowa zakładka „Lista ćwiczeń” — ćwiczenia pogrupowane po partiach mięśniowych',
+    'Trening: przycisk „Wyczyść wszystkie” usuwa wszystkie ćwiczenia po potwierdzeniu',
+    'Naprawione dodawanie zdjęć sylwetki',
+    'Pierwsze uruchomienie: ciemny motyw z fioletowym akcentem',
+    'Podpis autora w ustawieniach'
   ]
 };
 
@@ -93,7 +95,7 @@ function applyTheme(theme) {
 function getAccent() {
   const v = localStorage.getItem(ACCENT_KEY);
   if (v && ACCENTS[v]) return v;
-  return getTheme() === 'light' ? 'pink' : 'orange';
+  return getTheme() === 'light' ? 'pink' : 'purple';
 }
 function applyAccent(accent) {
   try { localStorage.setItem(ACCENT_KEY, accent); } catch (e) {}
@@ -971,6 +973,41 @@ function renderPlans() {
   wrap.innerHTML = html;
 }
 
+function toggleExerciseList() {
+  const box = document.getElementById('exercise-list');
+  const btn = document.getElementById('ex-list-toggle');
+  if (!box) return;
+  const hidden = box.classList.contains('hidden');
+  if (hidden) renderExerciseList();
+  box.classList.toggle('hidden');
+  if (btn) btn.textContent = hidden ? 'Ukryj listę ćwiczeń' : 'Lista ćwiczeń';
+}
+
+function renderExerciseList() {
+  const box = document.getElementById('exercise-list');
+  if (!box) return;
+  const used = MUSCLE_TAGS.filter(t => gymPlans().some(p => planTags(p).includes(t.key)));
+  if (!used.length) {
+    box.innerHTML = '<div class="card"><h3>Lista ćwiczeń</h3><div class="chart-empty">Brak ćwiczeń — dodaj rozpiskę siłową.</div></div>';
+    return;
+  }
+  let html = '<div class="card"><h3>Lista ćwiczeń</h3>' +
+    '<p class="field-hint">Wszystkie ćwiczenia z rozpiski pogrupowane po partiach mięśniowych.</p>';
+  used.forEach(t => {
+    const names = [];
+    gymPlans().forEach(p => {
+      if (planTags(p).includes(t.key)) {
+        p.exercises.forEach(n => { if (!names.includes(n)) names.push(n); });
+      }
+    });
+    if (!names.length) return;
+    html += '<h4 class="ex-part">' + esc(t.label) + '</h4>' +
+      '<ol class="ex-list">' + names.map(n => '<li>' + esc(n) + '</li>').join('') + '</ol>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
 function openPlanEdit(planId) {
   const p = planById(planId);
   if (!p) return;
@@ -1197,7 +1234,10 @@ function renderTraining() {
       html += '<div class="set-hint">kg × powtórzenia</div>' +
         '<button class="add-set" data-act="add-set" data-ex="' + i + '">+ Dodaj serię</button></div>';
     });
-    html += '<button class="btn secondary" id="add-ex-btn" style="width:100%">+ Dodaj ćwiczenie</button>';
+    html += '<div class="form-actions">' +
+      '<button class="btn secondary" id="add-ex-btn">+ Dodaj ćwiczenie</button>' +
+      (c.exercises.length ? '<button class="btn danger" id="clear-ex-btn">Wyczyść wszystkie</button>' : '') +
+      '</div>';
   } else {
     html += '<div class="chips">' + Object.keys(RUN_TYPES).map(t =>
       '<button class="chip' + (c.runType === t ? ' active' : '') + '" data-run="' + t + '">' + RUN_TYPES[t] + '</button>'
@@ -1280,6 +1320,12 @@ function delSet(exIdx, seIdx) {
 }
 function delEx(exIdx) {
   state.current.exercises.splice(exIdx, 1);
+  renderTraining();
+}
+function clearAllExercises() {
+  if (!state.current.exercises.length) return;
+  if (!confirm('Usunąć wszystkie ćwiczenia z tego treningu?')) return;
+  state.current.exercises = [];
   renderTraining();
 }
 
@@ -2740,6 +2786,7 @@ function bindEvents() {
     if (e.target.id === 'rt-start') { startRest(restTimer.total); return; }
     if (e.target.id === 'rt-stop') { stopRest(); return; }
     if (e.target.id === 'add-ex-btn') { openAddExercise(); return; }
+    if (e.target.id === 'clear-ex-btn') { clearAllExercises(); return; }
     if (e.target.id === 'add-plan-btn') { openPlanPick(); return; }
     if (e.target.id === 'btn-cancel-edit') {
       resetCurrent();
@@ -2789,6 +2836,8 @@ function bindEvents() {
     toast('Rozpiska dodana — mięśnie zaznaczone');
   });
 
+  document.getElementById('ex-list-toggle').addEventListener('click', toggleExerciseList);
+
   const progressForm = document.getElementById('progress-form');
   progressForm.addEventListener('change', e => {
     if (e.target.id === 'prog-ex') { state.prog.ex = e.target.value; renderProgress(); }
@@ -2815,11 +2864,6 @@ function bindEvents() {
     if (e.target.id === 'btn-save-health') { saveHealth(); return; }
     if (e.target.id === 'btn-cancel-health') { state.editHealthId = null; renderHealth(); return; }
     if (e.target.id === 'btn-save-goal') { saveGoalWeight(); return; }
-    if (e.target.id === 'btn-photo-add') { document.getElementById('photo-file').click(); return; }
-    const ph = e.target.closest('[data-photo]');
-    if (ph) { openPhoto(ph.dataset.photo); return; }
-    const dph = e.target.closest('[data-del-photo]');
-    if (dph) { deletePhoto(dph.dataset.delPhoto); return; }
     const ed = e.target.closest('[data-edit]');
     const dl = e.target.closest('[data-del]');
     if (ed) {
@@ -2832,12 +2876,25 @@ function bindEvents() {
     }
   });
 
-  const photoFile = document.getElementById('photo-file');
-  if (photoFile) {
-    photoFile.addEventListener('change', e => {
-      const f = e.target.files && e.target.files[0];
-      if (f) addPhoto(f);
-      e.target.value = '';
+  const photoBox = document.getElementById('photo-box');
+  if (photoBox) {
+    photoBox.addEventListener('click', e => {
+      if (e.target.id === 'btn-photo-add') {
+        const pf = document.getElementById('photo-file');
+        if (pf) pf.click();
+        return;
+      }
+      const ph = e.target.closest('[data-photo]');
+      if (ph) { openPhoto(ph.dataset.photo); return; }
+      const dph = e.target.closest('[data-del-photo]');
+      if (dph) { deletePhoto(dph.dataset.delPhoto); return; }
+    });
+    photoBox.addEventListener('change', e => {
+      if (e.target.id === 'photo-file') {
+        const f = e.target.files && e.target.files[0];
+        if (f) addPhoto(f);
+        e.target.value = '';
+      }
     });
   }
 
@@ -2988,7 +3045,7 @@ function init() {
   renderAccentSwatches();
   renderFeedback();
   const verEl = document.getElementById('settings-version');
-  if (verEl) verEl.textContent = 'BetterNM • wersja ' + APP_VERSION;
+  if (verEl) verEl.textContent = 'BetterNM • wersja ' + APP_VERSION + ' • Autor: sepes';
   const n = new Date();
   state.calYear = n.getFullYear();
   state.calMonth = n.getMonth();
