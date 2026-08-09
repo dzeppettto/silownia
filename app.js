@@ -3215,6 +3215,8 @@ function init() {
   renderFeedback();
   const verEl = document.getElementById('settings-version');
   if (verEl) verEl.textContent = 'BetterNM • wersja ' + APP_VERSION + ' • Autor: sepes';
+  const pvEl = document.getElementById('profile-version');
+  if (pvEl) pvEl.textContent = 'BetterNM • wersja ' + APP_VERSION + ' • Autor: sepes';
   const n = new Date();
   state.calYear = n.getFullYear();
   state.calMonth = n.getMonth();
