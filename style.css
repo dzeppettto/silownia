@@ -345,6 +345,39 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 34px; }
 .plan-actions { display: flex; gap: 10px; margin-top: 12px; }
 .plan-actions .btn { flex: 1; }
 
+/* Rozpiska: zwijane karty planów */
+.plan-acc { padding: 2px 16px; }
+.plan-acc-head {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 14px 0 12px;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.plan-acc-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+.plan-acc-title b { font-size: 15px; color: #fff; }
+.plan-acc .plan-tags { margin: 0; flex: 0 1 auto; }
+.plan-acc-count { flex: 0 0 auto; font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.plan-acc .set-chev { flex: 0 0 auto; color: var(--muted); transition: transform 0.18s; }
+.plan-acc.open .set-chev { transform: rotate(180deg); }
+.plan-acc-body { display: none; padding: 0 0 14px; }
+.plan-acc.open .plan-acc-body { display: block; }
+.plan-acc.open .plan-acc-body .ex-list { margin: 6px 0 4px; }
+
 /* Tagi mięśni */
 .plan-tags { margin: 8px 0 2px; display: flex; flex-wrap: wrap; gap: 6px; }
 .badge.tag {
@@ -390,6 +423,38 @@ main { max-width: 640px; margin: 0 auto; padding: 16px 14px 34px; }
 .ex-part { margin: 16px 0 6px; font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
 .ex-part:first-child { margin-top: 4px; }
 #exercise-list .ex-list { margin-top: 0; }
+#exercise-list .ex-list-click li { padding: 2px 0; }
+#exercise-list .ex-add-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 8px 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#exercise-list .ex-add-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#exercise-list .ex-add-chip {
+  flex: 0 0 auto;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+#exercise-list .ex-add-row:active .ex-add-chip { background: var(--accent); color: #fff; }
 
 /* ===== Chips ===== */
 .chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 12px 0; }
@@ -857,22 +922,35 @@ select option {
 .profile-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 6px 8px;
   border-radius: 14px;
   background: var(--card2);
   border: 1px solid var(--border);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+.profile-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  background: none;
+  border: none;
   color: var(--text);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   text-align: left;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.15s, background 0.15s;
 }
-.profile-item:active { transform: scale(0.98); }
+.profile-main:active { transform: scale(0.98); }
 .profile-item.active { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.10); }
+.profile-edit { flex: 0 0 auto; font-size: 13px; padding: 6px 10px; }
 .profile-avatar {
   width: 34px;
   height: 34px;
@@ -887,6 +965,7 @@ select option {
   justify-content: center;
 }
 .profile-check { margin-left: auto; color: var(--accent); font-weight: 800; }
+.profile-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-add-btn { width: 100%; margin-top: 14px; }
 .profile-meta { text-align: center; margin-top: 12px; }
 #profile-add-wrap { margin-top: 14px; text-align: left; }

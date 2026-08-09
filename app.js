@@ -12,16 +12,14 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.8';
+const APP_VERSION = 'beta 0.9';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.8',
+  version: 'beta 0.9',
   changes: [
-    'Rozpiska: nowa zakładka „Lista ćwiczeń” — ćwiczenia pogrupowane po partiach mięśniowych',
-    'Trening: przycisk „Wyczyść wszystkie” usuwa wszystkie ćwiczenia po potwierdzeniu',
-    'Naprawione dodawanie zdjęć sylwetki',
-    'Pierwsze uruchomienie: ciemny motyw z fioletowym akcentem',
-    'Podpis autora w ustawieniach'
+    'Lista ćwiczeń: kliknięcie dodaje ćwiczenie do treningu (od razu z partią mięśniową)',
+    'Rozpiska: plan można rozwijać/zwijać i usuwać przyciskiem Usuń',
+    'Profil: można zmienić nazwę profilu (ikona ołówka)'
   ]
 };
 
@@ -349,7 +347,9 @@ const state = {
   sumMonth: 0,
   prog: { ex: '', mode: 'volume', run: 'easy-run', metric: 'weight', km: 5, prEx: '' },
   pinEntry: '',
-  planFilter: []
+  planFilter: [],
+  planOpen: {},
+  renameProfileId: null
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -471,11 +471,14 @@ function renderProfileScreen() {
   const first = profiles.length === 0;
   list.innerHTML = profiles.map(p => {
     const initial = (p.name.trim().charAt(0) || '?').toUpperCase();
-    return '<button type="button" class="profile-item' + (p.id === current.id ? ' active' : '') + '" data-profile="' + esc(p.id) + '">' +
+    return '<div class="profile-item' + (p.id === current.id ? ' active' : '') + '">' +
+      '<button type="button" class="profile-main" data-profile="' + esc(p.id) + '">' +
       '<span class="profile-avatar">' + esc(initial) + '</span>' +
       '<span class="profile-name">' + esc(p.name) + '</span>' +
       '<span class="profile-check">' + (p.id === current.id ? '&#10003;' : '') + '</span>' +
-      '</button>';
+      '</button>' +
+      '<button type="button" class="mini-btn profile-edit" data-rename="' + esc(p.id) + '" title="Zmień nazwę profilu">&#9998;</button>' +
+      '</div>';
   }).join('');
   const addWrap = document.getElementById('profile-add-wrap');
   const addBtn = document.getElementById('profile-add-btn');
@@ -537,6 +540,37 @@ function createProfile() {
   document.getElementById('profile-add-wrap').classList.add('hidden');
   document.getElementById('profile-add-btn').classList.remove('hidden');
   switchProfile(id);
+}
+
+function startRenameProfile(id) {
+  const p = getProfiles().find(x => x.id === id);
+  if (!p) return;
+  state.renameProfileId = id;
+  const input = document.getElementById('profile-rename-input');
+  input.value = p.name;
+  document.getElementById('profile-rename-wrap').classList.remove('hidden');
+  input.focus();
+  input.select();
+}
+
+function cancelRenameProfile() {
+  state.renameProfileId = null;
+  document.getElementById('profile-rename-wrap').classList.add('hidden');
+}
+
+function saveRenameProfile() {
+  const input = document.getElementById('profile-rename-input');
+  const name = input.value.trim();
+  if (!name) { toast('Podaj nazwę profilu'); input.focus(); return; }
+  const profiles = getProfiles();
+  const p = profiles.find(x => x.id === state.renameProfileId);
+  if (!p) return;
+  p.name = name;
+  saveProfiles(profiles);
+  if (activeProfile().id === p.id) updateProfileBadge();
+  toast('Nazwa profilu zmieniona');
+  cancelRenameProfile();
+  renderProfileScreen();
 }
 
 /* ==================== KALENDARZ ==================== */
@@ -957,13 +991,21 @@ function renderPlans() {
   }
   filtered.forEach(p => {
     const tagHtml = planTags(p).map(k => '<span class="badge tag">' + esc(muscleTagLabel(k)) + '</span>').join('');
-    html += '<div class="card plan-gym"><h3>' + esc(p.name) + '<span class="badge gym">Siłownia</span></h3>' +
-      (tagHtml ? '<div class="plan-tags">' + tagHtml + '</div>' : '') +
+    const isOpen = !!state.planOpen[p.id];
+    html += '<div class="card plan-gym plan-acc' + (isOpen ? ' open' : '') + '">' +
+      '<button type="button" class="plan-acc-head" data-plan-toggle="' + esc(p.id) + '">' +
+      '<span class="plan-acc-title"><b>' + esc(p.name) + '</b><span class="badge gym">Siłownia</span></span>' +
+      (tagHtml ? '<span class="plan-tags">' + tagHtml + '</span>' : '') +
+      '<span class="plan-acc-count">' + p.exercises.length + ' ćw.</span>' +
+      '<svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+      '</button>' +
+      '<div class="plan-acc-body">' +
       '<ol class="ex-list">' + p.exercises.map(e => '<li>' + esc(e) + '</li>').join('') + '</ol>' +
       '<div class="plan-actions">' +
-      '<button class="btn primary small" data-startplan="' + p.id + '">Rozpocznij trening</button>' +
-      '<button class="btn secondary small" data-editplan="' + p.id + '">Edytuj ćwiczenia</button>' +
-      '</div></div>';
+      '<button class="btn primary small" data-startplan="' + esc(p.id) + '">Rozpocznij trening</button>' +
+      '<button class="btn secondary small" data-editplan="' + esc(p.id) + '">Edytuj</button>' +
+      '<button class="btn danger small" data-delplan="' + esc(p.id) + '">Usuń</button>' +
+      '</div></div></div>';
   });
   html += '<h3 class="tab-subtitle">Bieganie</h3>';
   bieganie.forEach(p => {
@@ -992,7 +1034,7 @@ function renderExerciseList() {
     return;
   }
   let html = '<div class="card"><h3>Lista ćwiczeń</h3>' +
-    '<p class="field-hint">Wszystkie ćwiczenia z rozpiski pogrupowane po partiach mięśniowych.</p>';
+    '<p class="field-hint">Kliknij ćwiczenie, aby dodać je do treningu. Wszystkie ćwiczenia z rozpiski pogrupowane po partiach mięśniowych.</p>';
   used.forEach(t => {
     const names = [];
     gymPlans().forEach(p => {
@@ -1002,7 +1044,11 @@ function renderExerciseList() {
     });
     if (!names.length) return;
     html += '<h4 class="ex-part">' + esc(t.label) + '</h4>' +
-      '<ol class="ex-list">' + names.map(n => '<li>' + esc(n) + '</li>').join('') + '</ol>';
+      '<ol class="ex-list ex-list-click">' + names.map(n =>
+        '<li><button type="button" class="ex-add-row" data-ex-add="' + esc(n) + '" data-ex-tag="' + t.key + '">' +
+        '<span class="ex-add-name">' + esc(n) + '</span>' +
+        '<span class="ex-add-chip">+ Dodaj</span></button></li>'
+      ).join('') + '</ol>';
   });
   html += '</div>';
   box.innerHTML = html;
@@ -1419,6 +1465,27 @@ function confirmAddExercise() {
   state.current.exercises.push({ name: name, sets: [{ w: '', r: '' }] });
   closeModal('modal-add-exercise');
   renderTraining();
+}
+
+function addExerciseFromList(name, tag) {
+  if (!name) return;
+  const c = state.current;
+  if (c.category !== 'silownia') {
+    c.category = 'silownia';
+    c.planId = null;
+    c.tags = [];
+    c.exercises = [];
+  }
+  if (tag && !c.tags.includes(tag)) c.tags.push(tag);
+  c.mode = 'new';
+  if (c.exercises.some(e => e.name === name)) {
+    showTab('trening');
+    toast('Ćwiczenie już jest w treningu');
+    return;
+  }
+  c.exercises.push({ name: name, sets: [{ w: '', r: '' }] });
+  showTab('trening');
+  toast('Dodano: ' + name);
 }
 
 function saveTraining() {
@@ -2618,6 +2685,10 @@ function bindEvents() {
   const profileScreen = document.getElementById('profile-screen');
   if (profileScreen) {
     profileScreen.addEventListener('click', e => {
+      const rn = e.target.closest('[data-rename]');
+      if (rn) { startRenameProfile(rn.dataset.rename); return; }
+      if (e.target.id === 'profile-rename-ok') { saveRenameProfile(); return; }
+      if (e.target.id === 'profile-rename-cancel') { cancelRenameProfile(); return; }
       const item = e.target.closest('[data-profile]');
       if (item) { switchProfile(item.dataset.profile); return; }
       if (e.target.id === 'profile-add-btn') {
@@ -2635,6 +2706,10 @@ function bindEvents() {
     });
     document.getElementById('profile-new-name').addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); createProfile(); }
+    });
+    const renameInput = document.getElementById('profile-rename-input');
+    if (renameInput) renameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); saveRenameProfile(); }
     });
   }
   document.getElementById('btn-profile').addEventListener('click', openProfileScreen);
@@ -2717,6 +2792,15 @@ function bindEvents() {
     if (s) { startPlanWorkout(s.dataset.startplan); return; }
     const b = e.target.closest('[data-editplan]');
     if (b) openPlanEdit(b.dataset.editplan);
+    const dp = e.target.closest('[data-delplan]');
+    if (dp) { deletePlan(dp.dataset.delplan); return; }
+    const tg = e.target.closest('[data-plan-toggle]');
+    if (tg) {
+      const id = tg.dataset.planToggle;
+      state.planOpen[id] = !state.planOpen[id];
+      renderPlans();
+      return;
+    }
   });
 
   document.getElementById('plan-add').addEventListener('click', openPlanAdd);
@@ -2837,6 +2921,10 @@ function bindEvents() {
   });
 
   document.getElementById('ex-list-toggle').addEventListener('click', toggleExerciseList);
+  document.getElementById('exercise-list').addEventListener('click', e => {
+    const ex = e.target.closest('[data-ex-add]');
+    if (ex) { addExerciseFromList(ex.dataset.exAdd, ex.dataset.exTag); return; }
+  });
 
   const progressForm = document.getElementById('progress-form');
   progressForm.addEventListener('change', e => {
