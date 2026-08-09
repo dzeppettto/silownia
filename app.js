@@ -12,14 +12,14 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.6';
+const APP_VERSION = 'beta 0.7';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.6',
+  version: 'beta 0.7',
   changes: [
-    'Kategorie mięśni: każda rozpiska siłowa ma teraz tagi mięśni (Plecy, Klatka, Nogi itd.)',
-    'Rozpiska: filtr po grupach mięśniowych — można wybrać kilka naraz',
-    'Motyw jamniczkowy: maskotka w nagłówku i w pustych dniach + jamniczkowe wskazówki'
+    'Trening: zamiast zakładek z planami — zaznaczasz osobno mięśnie, które ćwiczyłeś',
+    'Trening: „Dodaj z rozpiski” uzupełnia ćwiczenia i automatycznie zaznacza ich mięśnie',
+    'Nowa kategoria mięśni: Tyłek'
   ]
 };
 
@@ -227,6 +227,7 @@ const MUSCLE_TAGS = [
   { key: 'przedramiona', label: 'Przedramiona' },
   { key: 'nogi', label: 'Nogi' },
   { key: 'posladki', label: 'Pośladki' },
+  { key: 'tylek', label: 'Tyłek' },
   { key: 'lydki', label: 'Łydki' },
   { key: 'brzuch', label: 'Brzuch' }
 ];
@@ -335,7 +336,7 @@ const state = {
   calMonth: 0,
   dayDate: null,
   current: {
-    mode: 'new', category: 'silownia', planId: null, date: todayStr(), name: '', kcal: '', notes: '',
+    mode: 'new', category: 'silownia', planId: null, tags: [], date: todayStr(), name: '', kcal: '', notes: '',
     exercises: [], runType: 'easy-run', duration: '', distance: '', hr: '', zone: '', splits: {}
   },
   editLogId: null,
@@ -790,6 +791,7 @@ function repeatEntry(kind, id) {
     state.editRunId = null;
     state.current.category = 'silownia';
     state.current.planId = log.planId || (gymPlans()[0] && gymPlans()[0].id);
+    state.current.tags = Array.isArray(log.tags) ? log.tags.slice() : (log.planId ? planTags(planById(log.planId)).slice() : []);
     state.current.date = todayStr();
     state.current.name = log.name || '';
     state.current.kcal = '';
@@ -889,6 +891,7 @@ function startEdit(kind, id) {
     state.current.mode = 'edit';
     state.current.category = 'silownia';
     state.current.planId = log.planId || (gymPlans()[0] && gymPlans()[0].id);
+    state.current.tags = Array.isArray(log.tags) ? log.tags.slice() : (log.planId ? planTags(planById(log.planId)).slice() : []);
     state.current.date = log.date;
     state.current.name = log.name || '';
     state.current.kcal = log.kcal === undefined || log.kcal === null ? '' : log.kcal;
@@ -1070,6 +1073,7 @@ function startPlanWorkout(planId) {
   state.editRunId = null;
   state.current.category = 'silownia';
   state.current.planId = p.id;
+  state.current.tags = planTags(p).slice();
   state.current.date = todayStr();
   state.current.notes = '';
   state.current.duration = '';
@@ -1077,6 +1081,32 @@ function startPlanWorkout(planId) {
   state.current.exercises = p.exercises.map(name => ({ name: name, sets: [{ w: '', r: '' }] }));
   showTab('trening');
   toast('Rozpiska załadowana — wypełnij serie');
+}
+
+function loadPlanIntoWorkout(planId) {
+  const p = planById(planId);
+  if (!p) return;
+  state.current.planId = p.id;
+  (planTags(p)).forEach(k => { if (!state.current.tags.includes(k)) state.current.tags.push(k); });
+  const existing = state.current.exercises.map(e => e.name);
+  p.exercises.forEach(name => {
+    if (!existing.includes(name)) state.current.exercises.push({ name: name, sets: [{ w: '', r: '' }] });
+  });
+}
+
+function clearPlanFromWorkout() {
+  state.current.planId = null;
+}
+
+function openPlanPick() {
+  const list = document.getElementById('plan-pick-list');
+  const plans = gymPlans();
+  list.innerHTML = plans.length
+    ? plans.map(p => '<button class="plan-pick" data-plan-pick="' + p.id + '"><span class="pp-name">' + esc(p.name) + '</span>' +
+        (planTags(p).length ? '<span class="plan-tags">' + planTags(p).map(k => '<span class="badge tag">' + esc(muscleTagLabel(k)) + '</span>').join('') + '</span>' : '') +
+        '</button>').join('')
+    : '<div class="chart-empty">Brak rozpiski siłowej. Dodaj ją w zakładce Rozpiska.</div>';
+  openModal('modal-add-plan');
 }
 
 function lastResultFor(name) {
@@ -1111,6 +1141,8 @@ function resetCurrent() {
   state.current.name = '';
   state.current.kcal = '';
   state.current.notes = '';
+  state.current.planId = null;
+  state.current.tags = [];
   state.current.exercises = [];
   state.current.duration = '';
   state.current.distance = '';
@@ -1122,7 +1154,6 @@ function resetCurrent() {
 function renderTraining() {
   const wrap = document.getElementById('training-form');
   const c = state.current;
-  if (!c.planId && c.category === 'silownia' && gymPlans().length) c.planId = gymPlans()[0].id;
   let html = '<div class="chips">' +
     '<button class="chip' + (c.category === 'silownia' ? ' active' : '') + '" data-cat="silownia">Siłownia</button>' +
     '<button class="chip' + (c.category === 'bieganie' ? ' active' : '') + '" data-cat="bieganie">Bieganie</button></div>';
@@ -1133,18 +1164,19 @@ function renderTraining() {
       '<div class="form-actions"><button class="btn primary" id="rt-start">' + (restTimer.timer ? 'Restart' : 'Start') + '</button>' +
       '<button class="btn secondary" id="rt-stop">Stop</button></div></div>';
 
-    html += '<div class="chips">' + gymPlans().map(p =>
-      '<button class="chip' + (c.planId === p.id ? ' active' : '') + '" data-plan="' + p.id + '">' + esc(p.name) + '</button>'
-    ).join('') + '</div>';
+    html += '<label class="field-label">Mięśnie, które ćwiczyłeś (zaznacz kilka)</label>' +
+      '<div class="chips plan-filters">' + MUSCLE_TAGS.map(t =>
+        '<button class="chip' + (c.tags.includes(t.key) ? ' active' : '') + '" data-tag="' + t.key + '">' + esc(t.label) + '</button>'
+      ).join('') + '</div>';
 
-    const selPlan = planById(c.planId);
-    const selTags = selPlan ? planTags(selPlan) : [];
-    if (selTags.length) {
-      html += '<div class="plan-tags">' + selTags.map(k => '<span class="badge tag">' + esc(muscleTagLabel(k)) + '</span>').join('') + '</div>';
-    }
+    const selPlan = c.planId ? planById(c.planId) : null;
+    html += '<div class="form-row plan-row"><div><button class="btn secondary small" id="add-plan-btn">+ Dodaj ćwiczenia z rozpiski</button></div>' +
+      (selPlan ? '<div class="plan-loaded">' + icon('dumbbell') + '<span>' + esc(selPlan.name) + '</span>' +
+        '<button class="mini-btn" data-act="clear-plan" title="Wyczyść rozpiskę">✕</button></div>' : '') +
+      '</div>';
 
     if (!c.exercises.length) {
-      html += '<div class="chart-empty">Wybierz ćwiczenia do tego treningu:</div>';
+      html += '<div class="chart-empty">Dodaj ćwiczenia — wybierz rozpiskę albo wpisz własne.</div>';
     }
     c.exercises.forEach((ex, i) => {
       const last = lastResultFor(ex.name);
@@ -1313,15 +1345,16 @@ function restBeep() {
 }
 
 function openAddExercise() {
-  const plan = planById(state.current.planId);
   const sel = document.getElementById('add-ex-select');
   const existing = state.current.exercises.map(e => e.name);
   let opts = '<option value="__custom">— Własna nazwa —</option>';
-  if (plan) {
-    plan.exercises.filter(n => !existing.includes(n)).forEach(n => {
-      opts += '<option value="' + esc(n) + '">' + esc(n) + '</option>';
-    });
-  }
+  gymPlans().forEach(p => {
+    const names = p.exercises.filter(n => !existing.includes(n));
+    if (!names.length) return;
+    opts += '<optgroup label="' + esc(p.name) + '">';
+    names.forEach(n => { opts += '<option value="' + esc(n) + '">' + esc(n) + '</option>'; });
+    opts += '</optgroup>';
+  });
   sel.innerHTML = opts;
   document.getElementById('add-ex-custom-wrap').classList.toggle('hidden', sel.value !== '__custom');
   document.getElementById('add-ex-custom').value = '';
@@ -1360,9 +1393,10 @@ function saveTraining() {
       const log = data.logs.find(l => l.id === state.editLogId);
       if (log) {
         log.date = date; log.planId = c.planId; log.title = title; log.kcal = kcal; log.notes = notes; log.exercises = exercises;
+        log.tags = c.tags.slice();
       }
     } else {
-      data.logs.push({ id: uid(), date: date, planId: c.planId, title: title, kcal: kcal, notes: notes, exercises: exercises });
+      data.logs.push({ id: uid(), date: date, planId: c.planId, title: title, kcal: kcal, notes: notes, exercises: exercises, tags: c.tags.slice() });
     }
     save();
     toast('Zapisano trening siłowy');
@@ -2656,8 +2690,9 @@ function bindEvents() {
     const cat = e.target.closest('[data-cat]');
     if (cat) {
       state.current.category = cat.dataset.cat;
-      if (cat.dataset.cat === 'silownia' && gymPlans().length) {
-        state.current.planId = gymPlans()[0].id;
+      if (cat.dataset.cat === 'silownia') {
+        state.current.planId = null;
+        state.current.tags = [];
         state.current.exercises = [];
       } else if (cat.dataset.cat === 'bieganie') {
         state.current.exercises = [];
@@ -2668,20 +2703,12 @@ function bindEvents() {
       renderTraining();
       return;
     }
-    const plan = e.target.closest('[data-plan]');
-    if (plan) {
-      state.current.planId = plan.dataset.plan;
-      state.current.exercises = [];
-      state.editLogId = null;
-      state.current.mode = 'new';
-      renderTraining();
-      return;
-    }
-    const run = e.target.closest('[data-run]');
-    if (run) {
-      state.current.runType = run.dataset.run;
-      state.editRunId = null;
-      state.current.mode = 'new';
+    const tag = e.target.closest('[data-tag]');
+    if (tag) {
+      const key = tag.dataset.tag;
+      state.current.tags = state.current.tags.includes(key)
+        ? state.current.tags.filter(k => k !== key)
+        : state.current.tags.concat(key);
       renderTraining();
       return;
     }
@@ -2692,6 +2719,15 @@ function bindEvents() {
       if (a === 'add-set') addSet(ex);
       if (a === 'del-set') delSet(ex, parseInt(act.dataset.se, 10));
       if (a === 'del-ex') delEx(ex);
+      if (a === 'clear-plan') { clearPlanFromWorkout(); renderTraining(); return; }
+      return;
+    }
+    const run = e.target.closest('[data-run]');
+    if (run) {
+      state.current.runType = run.dataset.run;
+      state.editRunId = null;
+      state.current.mode = 'new';
+      renderTraining();
       return;
     }
     const rt = e.target.closest('[data-rt]');
@@ -2704,6 +2740,7 @@ function bindEvents() {
     if (e.target.id === 'rt-start') { startRest(restTimer.total); return; }
     if (e.target.id === 'rt-stop') { stopRest(); return; }
     if (e.target.id === 'add-ex-btn') { openAddExercise(); return; }
+    if (e.target.id === 'add-plan-btn') { openPlanPick(); return; }
     if (e.target.id === 'btn-cancel-edit') {
       resetCurrent();
       showTab('kalendarz');
@@ -2741,6 +2778,15 @@ function bindEvents() {
   document.getElementById('add-ex-ok').addEventListener('click', confirmAddExercise);
   document.getElementById('add-ex-select').addEventListener('change', e => {
     document.getElementById('add-ex-custom-wrap').classList.toggle('hidden', e.target.value !== '__custom');
+  });
+
+  document.getElementById('plan-pick-list').addEventListener('click', e => {
+    const b = e.target.closest('[data-plan-pick]');
+    if (!b) return;
+    loadPlanIntoWorkout(b.dataset.planPick);
+    closeModal('modal-add-plan');
+    renderTraining();
+    toast('Rozpiska dodana — mięśnie zaznaczone');
   });
 
   const progressForm = document.getElementById('progress-form');
