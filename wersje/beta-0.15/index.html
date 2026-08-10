@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f13">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BetterNM">
+  <meta name="format-detection" content="telephone=no">
+  <title>BetterNM</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <svg class="jamnik-bg" aria-hidden="true">
+    <defs>
+      <pattern id="jamnik-pat" width="150" height="90" patternUnits="userSpaceOnUse">
+        <g fill="currentColor" fill-opacity="0.07" stroke="currentColor" stroke-opacity="0.07">
+          <path d="M32 38 Q16 28 24 12" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <rect x="30" y="36" width="72" height="18" rx="9"/>
+          <circle cx="102" cy="40" r="13"/>
+          <rect x="94" y="26" width="30" height="18" rx="9"/>
+          <rect x="120" y="30" width="20" height="9" rx="4.5"/>
+          <path d="M100 28 Q92 44 102 45 Q108 44 106 31 Z"/>
+          <rect x="36" y="54" width="7" height="20" rx="3.5"/>
+          <rect x="54" y="54" width="7" height="20" rx="3.5"/>
+          <rect x="108" y="54" width="7" height="20" rx="3.5"/>
+          <rect x="124" y="54" width="7" height="20" rx="3.5"/>
+        </g>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#jamnik-pat)"/>
+  </svg>
+
+  <header class="app-header">
+    <img class="app-logo" src="logo.png" alt="BetterNM">
+    <div class="header-mascot" aria-hidden="true"><svg viewBox="0 0 120 66" fill="currentColor" aria-hidden="true">
+      <rect x="40" y="20" width="58" height="17" rx="8.5"/>
+      <path d="M94 26 q16 -1 19 -15" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="32" cy="23" r="11"/>
+      <rect x="9" y="25" width="22" height="10" rx="5"/>
+      <path d="M28 13 q-7 -7 4 -7 q7 0 3 9 q-1 3 -7 1z"/>
+      <circle cx="9" cy="29" r="2.4"/>
+      <rect x="46" y="37" width="7" height="16" rx="3.5"/>
+      <rect x="60" y="37" width="7" height="16" rx="3.5"/>
+      <rect x="74" y="37" width="7" height="16" rx="3.5"/>
+      <rect x="88" y="37" width="7" height="16" rx="3.5"/>
+    </svg></div>
+    <button id="btn-profile" class="profile-badge" aria-label="Zmień profil"></button>
+    <div class="header-actions">
+      <button id="btn-feedback" class="icon-btn header-btn" aria-label="Zgłoś błąd / uwaga">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+          <line x1="4" y1="22" x2="4" y2="15"/>
+        </svg>
+      </button>
+      <button id="btn-settings" class="icon-btn header-btn" aria-label="Ustawienia">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============ KALENDARZ ============ -->
+    <section id="tab-kalendarz" class="tab active">
+      <div class="cal-nav">
+        <button class="btn-ghost" id="cal-prev">&#10094;</button>
+        <h2 id="cal-title"></h2>
+        <button class="btn-ghost" id="cal-next">&#10095;</button>
+      </div>
+      <button class="btn-ghost cal-today" id="cal-today">Dzisiaj</button>
+      <div id="daily-tips"></div>
+      <div id="cal-streak"></div>
+      <div id="month-stats"></div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </section>
+
+    <!-- ============ ROZPISKA ============ -->
+    <section id="tab-rozpiska" class="tab">
+      <div class="tab-head">
+        <h2 class="tab-title">Rozpiska treningowa</h2>
+        <button class="btn primary small" id="plan-add">+ Dodaj rozpiskę</button>
+      </div>
+      <div id="plan-list"></div>
+      <button class="btn secondary ex-list-toggle" id="ex-list-toggle">Lista ćwiczeń</button>
+      <div id="exercise-list" class="hidden"></div>
+    </section>
+
+    <!-- ============ TRENING ============ -->
+    <section id="tab-trening" class="tab">
+      <h2 class="tab-title">Zapisz trening</h2>
+      <div id="training-form"></div>
+    </section>
+
+    <!-- ============ POSTĘP ============ -->
+    <section id="tab-postep" class="tab">
+      <h2 class="tab-title">Postęp</h2>
+      <div id="summary-box"></div>
+      <div class="card" id="badges-box"><h3>Odznaki</h3><div id="badges-grid"></div></div>
+      <div id="pr-box"></div>
+      <div id="progress-form"></div>
+    </section>
+
+    <!-- ============ ZAWODY ============ -->
+    <section id="tab-zawody" class="tab">
+      <h2 class="tab-title">Zawody i starty</h2>
+      <div id="races-form"></div>
+    </section>
+
+    <!-- ============ ZDROWIE ============ -->
+    <section id="tab-zdrowie" class="tab">
+      <h2 class="tab-title">Zdrowie</h2>
+      <div id="health-form"></div>
+      <div id="photo-box"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="kalendarz"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg></span><span>Kalendarz</span>
+    </button>
+    <button class="nav-btn" data-tab="rozpiska"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>
+      </svg></span><span>Rozpiska</span>
+    </button>
+    <button class="nav-btn" data-tab="trening"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="9" x2="3" y2="15"/><line x1="21" y1="9" x2="21" y2="15"/>
+        <line x1="6" y1="12" x2="18" y2="12"/><line x1="9" y1="12" x2="9" y2="8"/>
+        <line x1="15" y1="12" x2="15" y2="8"/><line x1="9" y1="16" x2="9" y2="20"/><line x1="15" y1="16" x2="15" y2="20"/>
+      </svg></span><span>Trening</span>
+    </button>
+    <button class="nav-btn" data-tab="postep"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 20V10M12 20V4M6 20v-6"/>
+      </svg></span><span>Postęp</span>
+    </button>
+    <button class="nav-btn" data-tab="zawody"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 21V4"/><path d="M5 4c3-2 6 2 9 0s6 1 6 1v9c-3-1-6 1-9-1s-6 0-6 0"/>
+      </svg></span><span>Zawody</span>
+    </button>
+    <button class="nav-btn" data-tab="zdrowie"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg></span><span>Zdrowie</span>
+    </button>
+  </nav>
+
+  <!-- ============ MODAL: dzień ============ -->
+  <div class="modal-overlay hidden" id="modal-day">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modal-day-title"></h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <div id="modal-day-content"></div>
+      <div class="modal-actions">
+        <button class="btn primary" id="modal-day-add-training">+ Trening</button>
+        <button class="btn secondary" id="modal-day-add-health">+ Zdrowie</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: dodaj ćwiczenie ============ -->
+  <div class="modal-overlay hidden" id="modal-add-exercise">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Dodaj ćwiczenie</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <label class="field-label" for="add-ex-select">Ćwiczenie</label>
+      <select id="add-ex-select"></select>
+      <div id="add-ex-custom-wrap" class="hidden">
+        <label class="field-label" for="add-ex-custom">Własna nazwa</label>
+        <input id="add-ex-custom" type="text" placeholder="np. Coś własnego">
+      </div>
+      <div class="modal-actions">
+        <button class="btn primary" id="add-ex-ok">Dodaj</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: dodaj ćwiczenia z rozpiski ============ -->
+  <div class="modal-overlay hidden" id="modal-add-plan">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Dodaj z rozpiski</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <p class="field-hint">Wybierz rozpiskę — dodadzą się jej ćwiczenia, a mięśnie zaznaczą automatycznie.</p>
+      <div id="plan-pick-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: edycja planu ============ -->
+  <div class="modal-overlay hidden" id="modal-plan-edit">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="plan-edit-title">Dodaj rozpiskę</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <label class="field-label" for="plan-edit-name">Nazwa rozpiska</label>
+      <input id="plan-edit-name" type="text" maxlength="40" placeholder="np. Klatka + Triceps">
+      <label class="field-label" for="plan-edit-cat">Kategoria</label>
+      <select id="plan-edit-cat">
+        <option value="silownia">Siłownia</option>
+        <option value="bieganie">Bieganie</option>
+      </select>
+      <div id="plan-tags-box">
+        <label class="field-label">Mięśnie (możesz wybrać kilka)</label>
+        <div class="chips" id="plan-tags-list"></div>
+      </div>
+      <label class="field-label" for="plan-edit-desc">Opis / plan (opcjonalnie, przydatny przy bieganiu)</label>
+      <input id="plan-edit-desc" type="text" maxlength="120" placeholder="np. 3 km rozbieganie + 4 x 800 m">
+      <p class="field-hint">Ćwiczenia — jedno w każdej linii (dla siłowni).</p>
+      <textarea id="plan-edit-text" rows="8"></textarea>
+      <div class="modal-actions">
+        <button class="btn primary" id="plan-edit-ok">Zapisz</button>
+        <button class="btn danger" id="plan-edit-delete" style="display:none">Usuń rozpiskę</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: ustawienia ============ -->
+  <div class="modal-overlay hidden" id="modal-settings">
+    <div class="modal">
+      <div class="modal-head">
+        <button class="icon-btn back-btn" data-close aria-label="Cofnij">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <h3>Ustawienia</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Profil</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint" id="settings-current-profile"></p>
+          <div class="modal-actions">
+            <button class="btn secondary" id="settings-switch-profile">Zmień profil</button>
+            <button class="btn secondary" id="settings-pin">Ustaw PIN</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item" id="set-nowosci">
+        <button class="set-head" type="button" aria-expanded="false"><span>Nowości</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint">Co nowego w tej wersji:</p>
+          <div id="changelog-list"></div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Wygląd</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <div class="modal-actions">
+            <button class="btn secondary" id="theme-auto">Auto</button>
+            <button class="btn secondary" id="theme-dark">Ciemny</button>
+            <button class="btn secondary" id="theme-light">Jasny</button>
+          </div>
+          <h4>Kolor akcentu</h4>
+          <div id="accent-swatches" class="accent-row"></div>
+          <h4>Maskotka</h4>
+          <div class="modal-actions">
+            <button class="btn secondary" id="mascot-none">Brak</button>
+            <button class="btn secondary" id="mascot-jamnik">Jamniczek</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Kopia zapasowa danych</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <div class="modal-actions">
+            <button class="btn primary" id="settings-export">Pobierz plik .json</button>
+            <button class="btn secondary" id="settings-copy">Kopiuj dane</button>
+          </div>
+          <p class="field-hint">Kopia przechowuje cały postęp tego profilu. Aby przenieść dane na nowy telefon: pobierz plik, wyślij go sobie (np. mailem), a na nowym telefonie wybierz poniżej „Przywróć z kopii”.</p>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Raport</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint">Podsumowanie ostatnich 30 dni. W oknie drukowania wybierz „Zapisz jako PDF”.</p>
+          <div class="modal-actions">
+            <button class="btn primary" id="settings-report">Generuj raport (PDF)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Trening</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <label class="remind-row"><input type="checkbox" id="rest-auto"><span>Auto-start stopera odpoczynku po wpisaniu serii</span></label>
+          <label class="remind-row"><input type="checkbox" id="prog-fill"><span>Wpisuj sugerowany ciężar do serii z rozpiski</span></label>
+          <p class="field-hint">Auto-stoper startuje sam, gdy skończysz wpisywać ciężar lub powtórzenia. Auto-ciężary wypełniają proponowany ciężar (na bazie ostatniego treningu) przy dodawaniu ćwiczeń z rozpiski.</p>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Przypomnienia</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <label class="remind-row"><input type="checkbox" id="remind-enable"><span>Przypominaj o treningu</span></label>
+          <div class="form-row">
+            <div><label class="field-label">Godzina</label><input type="time" id="remind-time"></div>
+            <div><label class="field-label">Wiadomość</label><input type="text" id="remind-msg" maxlength="60" placeholder="Czas na trening!"></div>
+          </div>
+          <p class="field-hint" id="remind-hint"></p>
+          <div class="modal-actions">
+            <button class="btn secondary" id="remind-save">Zapisz przypomnienie</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Przywróć z kopii</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <div class="modal-actions">
+            <button class="btn secondary" id="settings-import">Wybierz plik .json</button>
+            <input type="file" id="settings-file" accept=".json,application/json" class="hidden">
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Import ze Stravy</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint">Wgraj plik z eksportu Stravy — „activities.csv”, „.gpx” albo „.tcx”. Pobierzesz je na strava.com (Ustawienia → Pobierz wszystkie dane / Eksport). Biegi i jazdy rowerem trafią do kalendarza; duplikaty są pomijane.</p>
+          <div class="modal-actions">
+            <button class="btn secondary" id="settings-strava-import">Wybierz pliki Stravy</button>
+            <input type="file" id="strava-file" accept=".csv,.gpx,.tcx,text/csv,text/xml,application/gpx+xml" multiple class="hidden">
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item" id="set-feedback">
+        <button class="set-head" type="button" aria-expanded="false"><span>Uwagi i poprawki</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint">Lista rzeczy do poprawy w aplikacji. „Wyślij do autora" przesyła uwagi prosto do dewelopera (nowy Issue na GitHubie).</p>
+          <textarea id="feedback-input" rows="3" placeholder="np. dodać tryb ciemny w postępach..."></textarea>
+          <div class="modal-actions">
+            <button class="btn primary" id="feedback-add">Dodaj uwagę</button>
+            <button class="btn secondary" id="feedback-send">Wyślij do autora</button>
+            <button class="btn secondary" id="feedback-copy">Kopiuj listę</button>
+          </div>
+          <div id="feedback-list"></div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span class="danger-title">Niebezpieczne</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <div class="modal-actions">
+            <button class="btn danger" id="settings-reset">Wyczyść wszystkie dane</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set-item">
+        <button class="set-head" type="button" aria-expanded="false"><span>Zainstaluj aplikację</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="set-body">
+          <p class="field-hint" id="install-hint">Zainstaluj BetterNM na telefonie — działa jak zwykła aplikacja, bez przeglądarki.</p>
+          <div class="modal-actions">
+            <button class="btn primary hidden" id="install-btn">Zainstaluj aplikację</button>
+            <button class="btn secondary" id="settings-update">Aktualizuj aplikację</button>
+          </div>
+          <ul class="install-guide">
+            <li><b>Android (Chrome):</b> menu ⋮ → „Dodaj do ekranu głównego" lub „Zainstaluj aplikację".</li>
+            <li><b>iPhone/iPad (Safari):</b> przycisk Udostępnij → „Dodaj do ekranu głównego".</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="field-hint" id="settings-version"></p>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: PIN ============ -->
+  <div class="modal-overlay hidden" id="modal-pin">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="pin-modal-title">Ustaw PIN</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <p class="field-hint">PIN (4 cyfry) blokuje dostęp do tego profilu — podajesz go po wybraniu profilu w aplikacji.</p>
+      <label class="field-label" for="pin-input">Nowy PIN</label>
+      <input id="pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="new-password" placeholder="4 cyfry">
+      <label class="field-label" for="pin-confirm">Powtórz PIN</label>
+      <input id="pin-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="new-password" placeholder="jeszcze raz">
+      <p class="field-hint err-hint hidden" id="pin-err"></p>
+      <div class="modal-actions">
+        <button class="btn primary" id="pin-save">Zapisz PIN</button>
+        <button class="btn danger hidden" id="pin-remove">Usuń PIN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EKRAN PROFILI ============ -->
+  <div class="profile-screen hidden" id="profile-screen">
+    <div class="profile-card">
+      <img class="profile-banner" src="logo.png" alt="BetterNM">
+      <p class="profile-sub" id="profile-sub">Wybierz profil, aby kontynuować</p>
+      <div id="profile-list"></div>
+      <div id="profile-add-wrap" class="hidden">
+        <input id="profile-new-name" type="text" placeholder="Imię / nazwa profilu" maxlength="24" autocomplete="off">
+        <div class="modal-actions">
+          <button class="btn primary" id="profile-add-ok">Dodaj profil</button>
+          <button class="btn secondary" id="profile-add-cancel">Anuluj</button>
+        </div>
+      </div>
+      <div id="profile-rename-wrap" class="hidden">
+        <input id="profile-rename-input" type="text" placeholder="Nowa nazwa profilu" maxlength="24" autocomplete="off">
+        <div class="modal-actions">
+          <button class="btn primary" id="profile-rename-ok">Zapisz</button>
+          <button class="btn secondary" id="profile-rename-cancel">Anuluj</button>
+        </div>
+      </div>
+      <button class="btn secondary profile-add-btn" id="profile-add-btn">+ Nowy profil</button>
+      <p class="field-hint profile-meta" id="profile-screen-meta"></p>
+      <p class="profile-version" id="profile-version"></p>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: zdjęcie sylwetki ============ -->
+  <div class="modal-overlay hidden" id="modal-photo">
+    <div class="modal modal-photo">
+      <div class="modal-head">
+        <h3 id="photo-full-date"></h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <img id="photo-full" alt="Zdjęcie sylwetki">
+    </div>
+  </div>
+
+  <!-- ============ RAPORT (do wydruku / PDF) ============ -->
+  <div id="print-report"></div>
+
+  <!-- ============ EKRAN BLOKADY (PIN) ============ -->
+  <div class="lock-screen hidden" id="lock-screen">
+    <div class="lock-card">
+      <img class="lock-logo" src="logo.png" alt="BetterNM">
+      <p class="lock-title">Profil: <span id="lock-profile-name"></span></p>
+      <p class="lock-hint">Wpisz PIN, aby odblokować</p>
+      <div class="pin-dots" id="pin-dots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <p class="lock-err hidden" id="lock-err">Nieprawidłowy PIN</p>
+      <div class="pin-pad">
+        <button class="pin-key" type="button" data-pin="1">1</button>
+        <button class="pin-key" type="button" data-pin="2">2</button>
+        <button class="pin-key" type="button" data-pin="3">3</button>
+        <button class="pin-key" type="button" data-pin="4">4</button>
+        <button class="pin-key" type="button" data-pin="5">5</button>
+        <button class="pin-key" type="button" data-pin="6">6</button>
+        <button class="pin-key" type="button" data-pin="7">7</button>
+        <button class="pin-key" type="button" data-pin="8">8</button>
+        <button class="pin-key" type="button" data-pin="9">9</button>
+        <span class="pin-key empty"></span>
+        <button class="pin-key" type="button" data-pin="0">0</button>
+        <button class="pin-key" type="button" data-pin="back" aria-label="Kasuj">&larr;</button>
+      </div>
+      <button class="btn ghost-btn" id="lock-cancel" type="button">Inny profil</button>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
