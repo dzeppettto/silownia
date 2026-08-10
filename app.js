@@ -3191,6 +3191,84 @@ function getFeedback() {
 function saveFeedback(arr) {
   try { localStorage.setItem(FEEDBACK_KEY, JSON.stringify(arr)); } catch (e) {}
 }
+
+/* ===== Szybki panel zgłoszeń (flaga w topbarze) ===== */
+
+let fbqPhoto = null;
+
+function fbqContext() {
+  const profile = activeProfile();
+  const who = profile && profile.name ? profile.name : 'bez profilu';
+  return 'BetterNM ' + APP_VERSION +
+    ' · profil: ' + who +
+    ' · ' + new Date().toLocaleString('pl-PL') +
+    ' · ' + (navigator.userAgent || 'nieznane urządzenie');
+}
+
+function openFeedbackSheet() {
+  const inp = document.getElementById('fbq-input');
+  if (inp) inp.value = '';
+  clearFeedbackPhotoQuick();
+  const ctx = document.getElementById('fbq-context');
+  if (ctx) ctx.textContent = 'Dołączany automatycznie: ' + fbqContext();
+  openModal('modal-feedback');
+  if (inp) setTimeout(() => inp.focus(), 120);
+}
+
+function feedbackPhotoPreviewQuick() {
+  const box = document.getElementById('fbq-photo-preview');
+  if (!box) return;
+  box.classList.toggle('hidden', !fbqPhoto);
+  box.innerHTML = fbqPhoto
+    ? '<div class="fb-photo-wrap"><img src="' + fbqPhoto + '" alt="Załączone zdjęcie"><button class="mini-btn" id="fbq-photo-clear">Usuń</button></div>'
+    : '';
+}
+
+function pickFeedbackPhotoQuick(file) {
+  const reader = new FileReader();
+  reader.onload = () => { fbqPhoto = reader.result; feedbackPhotoPreviewQuick(); };
+  reader.readAsDataURL(file);
+}
+
+function clearFeedbackPhotoQuick() {
+  fbqPhoto = null;
+  feedbackPhotoPreviewQuick();
+}
+
+function sendQuickFeedback() {
+  const inp = document.getElementById('fbq-input');
+  const t = inp.value.trim();
+  if (!t) { toast('Opisz, co się stało'); inp.focus(); return; }
+  const profile = activeProfile();
+  const who = profile && profile.name ? profile.name : 'bez profilu';
+  const body = t +
+    '\n\n— wysłano z BetterNM ' + APP_VERSION +
+    ' (profil: ' + who + ')' +
+    '\nData: ' + new Date().toLocaleString('pl-PL') +
+    '\nEkran: ' + (window.screen ? screen.width + 'x' + screen.height : '?') +
+    '\nUrządzenie: ' + (navigator.userAgent || 'nieznane');
+  toast('Wysyłam do autora…');
+  const payload = { title: 'Zgłoszenie od: ' + who, body: body };
+  if (fbqPhoto) payload.photo = fbqPhoto;
+  fetch(FEEDBACK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => {
+      if (res.ok) {
+        toast('Wysłano do autora — dzięki!');
+        const arr = getFeedback();
+        arr.push({ t: t, photo: fbqPhoto, sent: true });
+        saveFeedback(arr);
+        closeModal('modal-feedback');
+      } else {
+        toast('Nie udało się wysłać (błąd ' + res.status + ')');
+      }
+    })
+    .catch(() => toast('Błąd sieci — spróbuj później'));
+}
+
 function renderFeedback() {
   const el = document.getElementById('feedback-list');
   if (!el) return;
@@ -4016,21 +4094,7 @@ function bindEvents() {
     }
   });
   const btnFeedback = document.getElementById('btn-feedback');
-  if (btnFeedback) btnFeedback.addEventListener('click', () => {
-    fillReminderSettings();
-    fillTrainingSettings();
-    renderFeedback();
-    renderChangelog();
-    openModal('modal-settings');
-    const item = document.getElementById('set-feedback');
-    if (item) {
-      item.classList.add('open');
-      const head = item.querySelector('.set-head');
-      if (head) head.setAttribute('aria-expanded', 'true');
-    }
-    const inp = document.getElementById('feedback-input');
-    if (inp) setTimeout(() => inp.focus(), 150);
-  });
+  if (btnFeedback) btnFeedback.addEventListener('click', openFeedbackSheet);
   document.getElementById('modal-settings').addEventListener('click', e => {
     const head = e.target.closest('.set-head');
     if (!head) return;
@@ -4066,6 +4130,29 @@ function bindEvents() {
       if (e.target.closest('#feedback-photo-clear')) clearFeedbackPhoto();
     });
   }
+  const fbqBtn = document.getElementById('fbq-photo-btn');
+  if (fbqBtn) {
+    fbqBtn.addEventListener('click', () => {
+      const pf = document.getElementById('fbq-photo-file');
+      if (pf) pf.click();
+    });
+  }
+  const fbqFile = document.getElementById('fbq-photo-file');
+  if (fbqFile) {
+    fbqFile.addEventListener('change', () => {
+      const f = fbqFile.files && fbqFile.files[0];
+      if (f) pickFeedbackPhotoQuick(f);
+      fbqFile.value = '';
+    });
+  }
+  const fbqPreview = document.getElementById('fbq-photo-preview');
+  if (fbqPreview) {
+    fbqPreview.addEventListener('click', e => {
+      if (e.target.closest('#fbq-photo-clear')) clearFeedbackPhotoQuick();
+    });
+  }
+  const fbqSend = document.getElementById('fbq-send');
+  if (fbqSend) fbqSend.addEventListener('click', sendQuickFeedback);
   document.getElementById('settings-switch-profile').addEventListener('click', () => {
     closeModal('modal-settings');
     openProfileScreen();

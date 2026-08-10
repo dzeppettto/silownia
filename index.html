@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
   <svg class="jamnik-bg" aria-hidden="true">
@@ -37,15 +37,18 @@
   </svg>
 
   <header class="app-header">
-    <a class="app-wordmark" href="#" id="app-home" aria-label="Treningi — strona główna">
+    <a class="app-wordmark" href="#" id="app-home" aria-label="BetterNM — strona główna">
       <span class="wm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11"/><path d="M3.5 9v6M20.5 9v6"/><path d="M6.5 12h11"/></svg></span>
-      <span class="wm-txt">Treningi</span>
+      <span class="wm-txt">BETTERNM</span>
     </a>
     <div class="header-spacer"></div>
     <button id="btn-profile" class="profile-chip" aria-label="Zmień profil">
       <span class="profile-avatar" id="header-avatar">M</span>
       <span class="profile-name" id="header-name">Profil</span>
       <span class="profile-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </button>
+    <button id="btn-feedback" class="icon-btn header-btn" aria-label="Zgłoś błąd / uwagę">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4c3-2 6 2 9 0s6 1 6 1v9c-3-1-6 1-9-1s-6 0-6 0"/></svg>
     </button>
     <button id="btn-settings" class="icon-btn header-btn" aria-label="Ustawienia">
       <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -58,6 +61,7 @@
   <main id="main">
     <!-- ============ DZIŚ (DASHBOARD) ============ -->
     <section id="tab-dzis" class="tab active">
+      <h2 class="tab-title">Dzisiaj</h2>
       <div id="dash-hero"></div>
       <div id="dash-stats"></div>
       <div id="dash-today"></div>
@@ -145,7 +149,7 @@
       </svg></span><span>Postęp</span>
     </button>
     <button class="nav-btn" data-tab="zawody"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 21V4"/><path d="M5 4c3-2 6 2 9 0s6 1 6 1v9c-3-1-6 1-9-1s-6 0-6 0"/>
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
       </svg></span><span>Zawody</span>
     </button>
     <button class="nav-btn" data-tab="zdrowie"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -187,6 +191,26 @@
         <button class="icon-btn" data-close>&#10005;</button>
       </div>
       <div id="sheet-body"></div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: zgłoś błąd / uwagę ============ -->
+  <div class="modal-overlay hidden" id="modal-feedback">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Zgłoś błąd lub pomysł</h3>
+        <button class="icon-btn" data-close>&#10005;</button>
+      </div>
+      <textarea id="fbq-input" rows="3" placeholder="Opisz, co się stało lub co warto poprawić."></textarea>
+      <div class="fb-toolbar">
+        <button class="btn secondary small" id="fbq-photo-btn">+ Dodaj zdjęcie</button>
+        <input type="file" id="fbq-photo-file" accept="image/*" class="hidden">
+      </div>
+      <div id="fbq-photo-preview" class="hidden"></div>
+      <p class="field-hint" id="fbq-context"></p>
+      <div class="modal-actions">
+        <button class="btn primary" id="fbq-send">Wyślij zgłoszenie</button>
+      </div>
     </div>
   </div>
 
@@ -499,6 +523,6 @@
 
   <div id="toast" class="hidden"></div>
 
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>
