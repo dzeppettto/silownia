@@ -12,20 +12,19 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.19';
+const APP_VERSION = 'beta 0.20';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.19',
+  version: 'beta 0.20',
   changes: [
-    'Nowa zakładka „Dzisiaj”: powitanie, ostatnia waga, treningi/dystans/objętość z ostatnich 7 dni z porównaniem do poprzedniego tygodnia, pasek aktywności, dzisiejszy trening i następne zawody',
-    'Tryb skupienia w treningu siłowym — jedno ćwiczenie na raz, pasek postępu, propozycja ciężaru, wykrywanie rekordu (PR) i stoper przerwy',
-    'Przycisk „+” nad paskiem nawigacji — szybkie dodawanie zależnie od zakładki: wpisu dnia, rozpiski, ćwiczenia, pomiaru zdrowia lub zawodów',
-    'Formularze zdrowia i zawodów jako arkusz wysuwany z dołu (bottom sheet) — historia pomiarów i lista startów zostały w zakładkach',
-    'Okna modalne mają animację wysuwania z dołu i uchwyt',
-    'Odznaki są zwijane i przeniesione do zakładki Kalendarz',
-    'Edycja rozpiski: możesz dodać opis/plan (np. „3 serie po 10 powtórzeń”)',
-    'Do uwagi (flaga) można dołączyć zdjęcie',
-    'Nagłówek pokazuje imię aktywnego profilu'
+    'Nowy nagłówek: logo „Treningi", chip aktywnego profilu (awatar + imię) i przycisk ustawień',
+    'Przeprojektowany dashboard „Dzisiaj": kompaktowe powitanie z wagą, podsumowanie „Ten tydzień" (treningi / dystans / objętość) z porównaniem do poprzedniego tygodnia oraz pasek ostatnich 7 dni z etykietami dni i kolorami dyscyplin',
+    'Fioletowy przycisk „+" z menu szybkich akcji zależnych od zakładki (speed-dial)',
+    'Osobiste rekordy (PR): lista najlepszych serii z menu „•••" i wariantami — Rekord / Osobisty rekord (best) / Szacowany 1RM / Usuń z listy',
+    'Karty zawodów z odliczaniem dni do startu i menu „•••"',
+    'Duży stoper czasu treningu w formularzu siłowym',
+    'Przyciski bez majuskułów — czytelniejsze, mniej krzykliwe',
+    'Mikrointerakcje: animacje naciśnięć, płynniejsze przejścia i ładniejsza sekcja uwag'
   ]
 };
 
@@ -276,6 +275,7 @@ function normalizeData(d) {
   if (!Array.isArray(d.races)) d.races = [];
   if (!Array.isArray(d.photos)) d.photos = [];
   if (!d.goal || typeof d.goal !== 'object') d.goal = {};
+  if (!d.prs || typeof d.prs !== 'object') d.prs = {};
   return d;
 }
 
@@ -374,7 +374,14 @@ const state = {
   renameProfileId: null,
   restOpen: false,
   musclesOpen: false,
-  badgesOpen: true,
+  badgesOpen: false,
+  prOpen: true,
+  prListOpen: true,
+  sumOpen: true,
+  progGymOpen: true,
+  progRunOpen: true,
+  progHealthOpen: true,
+  progPredOpen: true,
   focus: { on: false, idx: 0 }
 };
 
@@ -472,20 +479,72 @@ function showTab(name) {
   if (name === 'postep') renderProgress();
   if (name === 'zdrowie') renderHealth();
   if (name === 'zawody') renderRaces();
-  const fab = document.getElementById('fab');
-  if (fab) fab.classList.toggle('hidden', name === 'dzis' || name === 'postep');
+  closeFabMenu();
   window.scrollTo(0, 0);
 }
 
-function fabAction() {
-  if (state.tab === 'kalendarz') { openDay(todayStr()); return; }
-  if (state.tab === 'rozpiska') { openPlanAdd(); return; }
-  if (state.tab === 'trening') {
-    if (state.current.category !== 'silownia') { state.current.category = 'silownia'; state.focus.on = false; renderTraining(); }
-    openAddExercise(); return;
-  }
-  if (state.tab === 'zawody') { openRaceSheet(); return; }
-  if (state.tab === 'zdrowie') { openHealthSheet(); return; }
+function fabMenuItems() {
+  const t = state.tab;
+  if (t === 'dzis') return [
+    { label: 'Rozpocznij trening', icon: icon('dumbbell'), act: () => showTab('trening') },
+    { label: 'Dodaj zawody', icon: icon('flag'), act: () => { showTab('zawody'); openRaceSheet(); } }
+  ];
+  if (t === 'kalendarz') return [
+    { label: 'Podgląd dnia', icon: icon('clock'), act: () => openDay(todayStr()) }
+  ];
+  if (t === 'rozpiska') return [
+    { label: 'Dodaj rozpiskę', icon: icon('dumbbell'), act: openPlanAdd }
+  ];
+  if (t === 'trening') return [
+    { label: 'Dodaj ćwiczenie', icon: icon('dumbbell'), act: () => {
+      if (state.current.category !== 'silownia') { state.current.category = 'silownia'; state.focus.on = false; renderTraining(); }
+      openAddExercise();
+    } }
+  ];
+  if (t === 'postep') return [
+    { label: 'Rozpocznij trening', icon: icon('dumbbell'), act: () => showTab('trening') }
+  ];
+  if (t === 'zawody') return [
+    { label: 'Dodaj zawody', icon: icon('flag'), act: openRaceSheet }
+  ];
+  if (t === 'zdrowie') return [
+    { label: 'Dodaj pomiar', icon: icon('bell'), act: openHealthSheet }
+  ];
+  return [];
+}
+
+function renderFabMenu() {
+  const menu = document.getElementById('fab-menu');
+  if (!menu) return;
+  const items = fabMenuItems();
+  menu.innerHTML = items.map((it, i) =>
+    '<button class="fab-item" data-fab-item="' + i + '">' + (it.icon || icon('dumbbell')) + '<span>' + esc(it.label) + '</span></button>').join('');
+  menu._items = items;
+}
+
+function toggleFabMenu() {
+  const fab = document.getElementById('fab');
+  const menu = document.getElementById('fab-menu');
+  if (!fab || !menu) return;
+  const opening = menu.classList.contains('hidden');
+  if (opening) renderFabMenu();
+  fab.classList.toggle('open', opening);
+  menu.classList.toggle('hidden', !opening);
+}
+
+function closeFabMenu() {
+  const fab = document.getElementById('fab');
+  const menu = document.getElementById('fab-menu');
+  if (fab) fab.classList.remove('open');
+  if (menu) menu.classList.add('hidden');
+}
+
+function fabAction(index) {
+  const menu = document.getElementById('fab-menu');
+  const items = menu && menu._items ? menu._items : [];
+  closeFabMenu();
+  const it = items[index];
+  if (it && it.act) it.act();
 }
 
 /* ==================== MODALS ==================== */
@@ -500,16 +559,111 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   ov.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => ov.classList.add('hidden')));
 });
 
+/* ==================== MENU KONTEKSTOWE (•••) ==================== */
+
+function openContextMenu(anchor, items) {
+  closeContextMenu();
+  const layer = document.getElementById('menu-layer');
+  if (!layer || !anchor) return;
+  const menu = document.createElement('div');
+  menu.className = 'menu';
+  menu.innerHTML = items.map((it, i) =>
+    it.sep
+      ? '<div class="menu-sep"></div>'
+      : '<button class="menu-item' + (it.danger ? ' danger' : '') + '" data-mi="' + i + '">' +
+        (it.icon ? '<span class="mi-ico">' + it.icon + '</span>' : '') +
+        '<span>' + esc(it.label) + '</span>' +
+        (it.on ? '<span class="mi-check">✓</span>' : '') +
+        '</button>').join('');
+  menu._items = items;
+  layer.appendChild(menu);
+  layer.classList.remove('hidden');
+  const r = anchor.getBoundingClientRect();
+  const mw = menu.offsetWidth;
+  const mh = menu.offsetHeight;
+  let left = r.right - mw;
+  let top = r.bottom + 6;
+  if (left < 8) left = 8;
+  if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+  if (top + mh > window.innerHeight - 8) top = r.top - mh - 6;
+  if (top < 8) top = 8;
+  menu.style.left = Math.max(8, left) + 'px';
+  menu.style.top = top + 'px';
+}
+
+function closeContextMenu() {
+  const layer = document.getElementById('menu-layer');
+  if (layer) { layer.classList.add('hidden'); layer.innerHTML = ''; }
+}
+
+document.addEventListener('click', e => {
+  const pr = e.target.closest('[data-pr-menu]');
+  if (pr) { openPRMenu(pr); return; }
+  const rc = e.target.closest('[data-race-menu]');
+  if (rc) { openRaceMenu(rc); return; }
+  const mi = e.target.closest('[data-mi]');
+  if (mi) {
+    const menu = mi.closest('.menu');
+    if (menu && menu._items) {
+      const it = menu._items[+mi.dataset.mi];
+      closeContextMenu();
+      if (it && it.act) it.act();
+    }
+    return;
+  }
+  const layer = document.getElementById('menu-layer');
+  if (layer && !layer.classList.contains('hidden')) closeContextMenu();
+});
+
+document.addEventListener('click', e => {
+  const tb = e.target.closest('[data-card-toggle]');
+  if (!tb) return;
+  const key = tb.dataset.cardToggle;
+  state[key] = !state[key];
+  tb.setAttribute('aria-expanded', state[key] ? 'true' : 'false');
+  const next = tb.nextElementSibling;
+  if (next && next.classList.contains('card-collapse')) next.classList.toggle('open', state[key]);
+});
+
+function openPRMenu(btn) {
+  const name = btn.dataset.prMenu;
+  if (!name) return;
+  const ovr = prOverrides();
+  const t = (ovr[name] && ovr[name].type) || 'rekord';
+  openContextMenu(btn, [
+    { label: 'Rekord', icon: icon('star'), on: t === 'rekord', act: () => setPRType(name, 'rekord') },
+    { label: 'Osobisty rekord (best)', icon: icon('star'), on: t === 'best', act: () => setPRType(name, 'best') },
+    { label: 'Szacowany 1RM', icon: icon('bolt'), on: t === 'rm', act: () => setPRType(name, 'rm') },
+    { sep: true },
+    { label: 'Usuń z listy', icon: icon('lock'), danger: true, act: () => {
+      ovr[name] = Object.assign({}, ovr[name] || {}, { hidden: true });
+      save();
+      toast('Usunięto z listy rekordów');
+      renderPR();
+    } }
+  ]);
+}
+
+function openRaceMenu(btn) {
+  const id = btn.dataset.raceMenu;
+  if (!id) return;
+  openContextMenu(btn, [
+    { label: 'Edytuj', icon: icon('print'), act: () => openRaceSheet(id) },
+    { label: 'Usuń', icon: icon('lock'), danger: true, act: () => deleteRace(id) }
+  ]);
+}
+
 /* ==================== PROFILE ==================== */
 
 function updateProfileBadge() {
-  const b = document.getElementById('btn-profile');
-  if (!b) return;
+  const chip = document.getElementById('btn-profile');
+  if (!chip) return;
   const p = activeProfile();
-  b.textContent = (p.name.trim().charAt(0) || '?').toUpperCase();
-  b.title = 'Profil: ' + p.name;
-  const title = document.getElementById('header-title');
-  if (title) title.textContent = p.name;
+  const av = document.getElementById('header-avatar');
+  const nm = document.getElementById('header-name');
+  if (av) av.textContent = (p.name.trim().charAt(0) || '?').toUpperCase();
+  if (nm) nm.textContent = p.name;
+  chip.title = 'Profil: ' + p.name;
   const meta = document.getElementById('settings-current-profile');
   if (meta) meta.textContent = 'Aktywny profil: ' + p.name + ' (osobna baza danych)';
 }
@@ -659,47 +813,61 @@ function renderDashboard() {
   const prof = activeProfile();
   const name = prof.name.trim().split(/\s+/)[0] || '';
 
-  let html = '<div class="dash-hero card">' +
-    (mascotOn() ? '<div class="dash-hero-mascot">' + jamnikSVG(54) + '</div>' : '') +
-    '<div><div class="dash-greet">' + esc(greet) + (name ? ', ' + esc(name) : '') + '</div>' +
-    '<div class="dash-date">' + fmtLongDate(today) + '</div></div></div>';
-  document.getElementById('dash-hero').innerHTML = html;
-
-  const cur = rangeActivity(0, 6);
-  const prev = rangeActivity(7, 13);
-  const trend = (d, goodUp) => {
-    if (d === null || d === undefined || isNaN(d)) return '';
-    if (d === 0) return '<span class="stat-trend same">0%</span>';
-    const up = d > 0, good = up === goodUp;
-    return '<span class="stat-trend ' + (good ? 'good' : 'bad') + '">' + (up ? '↑' : '↓') + Math.abs(d) + '%</span>';
-  };
-
   const hs = data.health.slice().sort((a, b) => a.date < b.date ? -1 : 1);
   const wLast = hs[hs.length - 1], wPrev = hs[hs.length - 2];
   let wDelta = null;
   if (wLast && wPrev) wDelta = Math.round((num(wLast.weight) - num(wPrev.weight)) * 10) / 10;
-  const wTrend = wDelta === null ? '' :
-    (wDelta === 0 ? '<span class="stat-trend same">0 kg</span>' :
-      '<span class="stat-trend ' + (wDelta <= 0 ? 'good' : 'bad') + '">' + (wDelta > 0 ? '↑' : '↓') + Math.abs(wDelta) + ' kg</span>');
+
+  let html = '<div class="dash-hero card">' +
+    (mascotOn() ? '<div class="dash-hero-mascot">' + jamnikSVG(46) + '</div>' : '') +
+    '<div class="dash-hero-main"><div class="dash-greet">' + esc(greet) + (name ? ', ' + esc(name) : '') + '</div>' +
+    '<div class="dash-date">' + fmtLongDate(today) + '</div></div>';
+  if (wLast && num(wLast.weight) > 0) {
+    const wSub = wDelta === null || wDelta === 0
+      ? '<span class="dw-sub">' + (wDelta === null ? 'ostatni pomiar' : 'bez zmian') + '</span>'
+      : '<span class="dw-sub ' + (wDelta < 0 ? 'down' : 'up') + '">' + (wDelta < 0 ? '▼ ' : '▲ ') + fmtNum(Math.abs(wDelta)) + ' kg</span>';
+    html += '<div class="dash-weight"><span class="dw-val">' + fmtNum(num(wLast.weight)) + ' kg</span>' + wSub + '</div>';
+  }
+  html += '</div>';
+  document.getElementById('dash-hero').innerHTML = html;
+
+  const cur = rangeActivity(0, 6);
+  const prev = rangeActivity(7, 13);
+  const delta = (d, goodUp) => {
+    if (d === null || d === undefined || isNaN(d)) return '<span class="neutral">—</span>';
+    if (d === 0) return '<span class="neutral">bez zmian</span>';
+    const up = d > 0, good = up === goodUp;
+    return '<span class="' + (good ? 'up' : 'down') + '">' + (up ? '▲' : '▼') + Math.abs(d) + '%</span>';
+  };
+  const wk = (val, lbl, tr) =>
+    '<div class="ws-card"><div class="ws-val">' + val + '</div>' +
+    '<div class="ws-lbl">' + lbl + '</div>' +
+    '<div class="ws-delta">' + (tr || '<span class="neutral">—</span>') + '</div></div>';
 
   let weekBars = '';
+  let dayLabels = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const ds = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
-    const on = data.logs.some(l => l.date === ds) || data.runs.some(r => r.date === ds);
+    const gym = data.logs.some(l => l.date === ds);
+    const run = data.runs.some(r => r.date === ds);
+    const bike = data.bikes.some(b => b.date === ds);
+    const cls = gym ? 'gym' : run ? 'run' : bike ? 'bike' : 'off';
     const lbl = DOWS[d.getDay() === 0 ? 6 : d.getDay() - 1];
-    weekBars += '<div class="wk-bar' + (on ? ' on' : '') + '" title="' + lbl + ' ' + shortDate(ds) + '"></div>';
+    dayLabels.push((i === 0 ? '<span class="today">' + lbl + '</span>' : '<span>' + lbl + '</span>'));
+    weekBars += '<div class="wk-bar ' + cls + '" title="' + lbl + ' ' + shortDate(ds) + '"></div>';
   }
 
-  const sc = (val, lbl, tr) => '<div class="stat-card"><div class="stat-val">' + val + '</div><div class="stat-lbl">' + lbl + '</div>' + (tr ? tr : '') + '</div>';
-  html = '<div class="dash-stats">' +
-    sc((wLast ? fmtNum(num(wLast.weight)) + ' kg' : '—'), 'Ostatnia waga', wTrend) +
-    sc(cur.days, 'Treningi · 7 dni', trend(dashTrend(cur.days, prev.days), true)) +
-    sc(cur.km > 0 ? fmtNum(cur.km) + ' km' : '—', 'Dystans · 7 dni', trend(dashTrend(cur.km, prev.km), true)) +
-    sc(cur.vol > 0 ? fmtNum(cur.vol) + ' kg' : '—', 'Objętość · 7 dni', trend(dashTrend(cur.vol, prev.vol), true)) +
+  html = '<h2 class="sec-label">Ten tydzień</h2>' +
+    '<div class="week-summary">' +
+    wk(cur.days, 'Treningi', delta(dashTrend(cur.days, prev.days), true)) +
+    wk(cur.km > 0 ? fmtNum(cur.km) + ' km' : '0 km', 'Dystans', delta(dashTrend(cur.km, prev.km), true)) +
+    wk(cur.vol > 0 ? fmtNum(cur.vol) + ' kg' : '0 kg', 'Objętość', delta(dashTrend(cur.vol, prev.vol), true)) +
     '</div>' +
     '<div class="card"><div class="wk-head"><span class="wk-title">Ostatnie 7 dni</span>' +
-    '<span class="wk-days">' + cur.days + '/' + 7 + ' dni aktywnych</span></div><div class="wk-bars">' + weekBars + '</div></div>';
+    '<span class="wk-days">' + cur.days + '/' + 7 + ' dni aktywnych</span></div>' +
+    '<div class="wk-bars">' + weekBars + '</div>' +
+    '<div class="wk-labels">' + dayLabels.join('') + '</div></div>';
   document.getElementById('dash-stats').innerHTML = html;
 
   const todLogs = data.logs.filter(l => l.date === today);
@@ -866,6 +1034,15 @@ function renderMonthStats() {
 
 function statCell(val, lbl, sm) {
   return '<div class="stat-card"><div class="stat-val' + (sm ? ' stat-sm' : '') + '">' + val + '</div><div class="stat-lbl">' + lbl + '</div></div>';
+}
+
+function cardHead(key, title) {
+  const open = !!state[key];
+  return '<button type="button" class="card-head" data-card-toggle="' + key + '" aria-expanded="' + (open ? 'true' : 'false') + '"><span>' + esc(title) + '</span><svg class="card-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>';
+}
+
+function collapseOpen(key) {
+  return state[key] ? ' open' : '';
 }
 
 function renderDailyTips() {
@@ -2205,10 +2382,13 @@ function badges() {
 function renderBadges() {
   const el = document.getElementById('badges-grid');
   if (!el) return;
-  const btn = document.querySelector('[data-badges-toggle]');
-  if (btn) btn.setAttribute('aria-expanded', state.badgesOpen ? 'true' : 'false');
-  const collapse = document.getElementById('badges-collapse');
-  if (collapse) collapse.classList.toggle('open', state.badgesOpen);
+  const box = document.getElementById('badges-box');
+  if (box) {
+    const btn = box.querySelector('[data-card-toggle="badgesOpen"]');
+    const collapse = box.querySelector('.card-collapse');
+    if (btn) btn.setAttribute('aria-expanded', state.badgesOpen ? 'true' : 'false');
+    if (collapse) collapse.classList.toggle('open', state.badgesOpen);
+  }
   const list = badges();
   el.innerHTML = list.map(b =>
     '<div class="badge-tile' + (b.ok ? ' on' : '') + '" title="' + esc(b.desc) + '">' +
@@ -2249,37 +2429,65 @@ function allExercisePRs() {
   return out;
 }
 
+function prOverrides() {
+  if (!data.prs || typeof data.prs !== 'object') data.prs = {};
+  return data.prs;
+}
+
+function prTypeLabel(t) {
+  if (t === 'best') return 'Osobisty';
+  if (t === 'rm') return '1RM';
+  return 'Rekord';
+}
+
+function setPRType(name, type) {
+  const ovr = prOverrides();
+  ovr[name] = Object.assign({}, ovr[name] || {}, { type: type, hidden: false });
+  save();
+  renderPR();
+  toast(prTypeLabel(type) + ': ' + name);
+}
+
+function renderPRList(box) {
+  const ovr = prOverrides();
+  const prs = allExercisePRs().sort((a, b) => b.w - a.w);
+  const list = prs.filter(p => !(ovr[p.name] && ovr[p.name].hidden));
+  let html = '<div class="card">' + cardHead('prListOpen', 'Osobiste rekordy (PR)') +
+    '<div class="card-collapse' + collapseOpen('prListOpen') + '">';
+  if (!list.length) {
+    html += '<div class="chart-empty">Brak zarejestrowanych serii — dodaj trening siłowy, a pojawią się tu najlepsze wyniki.</div>';
+  } else {
+    html += '<div class="pr-list">' + list.map(p => {
+      const t = (ovr[p.name] && ovr[p.name].type) || 'rekord';
+      return '<div class="pr-item">' +
+        '<span class="pr-badge ' + (t === 'best' ? 'best' : t === 'rm' ? 'rm' : '') + '">' + prTypeLabel(t) + '</span>' +
+        '<div class="pr-rank"><span class="pr-name">' + esc(p.name) + '</span>' +
+        '<span class="pr-sub">' + shortDate(p.date) + '</span></div>' +
+        '<div class="pr-right"><span class="pr-val">' + fmtNum(p.w) + ' × ' + fmtNum(p.r) + '</span>' +
+        '<span class="pr-e1rm">' + fmtNum(p.e) + ' kg (1RM)</span></div>' +
+        '<button class="pr-menu-btn" data-pr-menu="' + esc(p.name) + '" aria-label="Menu rekordu">•••</button>' +
+        '</div>';
+    }).join('') + '</div>';
+  }
+  html += '</div></div>';
+  box.innerHTML += html;
+}
+
 function renderPR() {
   const box = document.getElementById('pr-box');
   if (!box) return;
   const names = allExerciseNames();
   const sel = state.prog.prEx || names[0];
   if (sel && state.prog.prEx !== sel) state.prog.prEx = sel;
-  const prs = allExercisePRs().sort((a, b) => b.e - a.e);
 
-  let html = '<div class="card"><h3>Rekordy i szacowany 1RM</h3>';
-  html += '<label class="field-label">Ćwiczenie</label><select id="pr-ex">' +
+  let html = '<div class="card">' + cardHead('prOpen', 'Wykres: ciężar i szacowany 1RM') +
+    '<div class="card-collapse' + collapseOpen('prOpen') + '">' +
+    '<label class="field-label">Ćwiczenie</label><select id="pr-ex">' +
     names.map(n => '<option value="' + esc(n) + '"' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>';
   html += '<div class="pr-legend"><span class="pr-lg pr-a">PR (max kg)</span><span class="pr-lg pr-b">1RM (est.)</span></div>';
   html += '<div id="chart-pr"></div>';
   html += '<div id="chart-e1"></div>';
-  html += '</div>';
-
-  html += '<div class="card"><h3>Ranking ćwiczeń</h3>';
-  if (!prs.length) html += '<div class="chart-empty">Brak zarejestrowanych serii.</div>';
-  else {
-    const top = prs.slice(0, 8);
-    html += '<div class="pr-list">' + top.map(x => {
-      const maxE = prs[0].e;
-      const pct = maxE > 0 ? Math.round((x.e / maxE) * 100) : 0;
-      return '<div class="pr-item">' +
-        '<div class="pr-rank"><span class="pr-name">' + esc(x.name) + '</span><span class="pr-sub">' + shortDate(x.date) + '</span></div>' +
-        '<div class="pr-right"><span class="pr-val">' + fmtNum(x.w) + ' × ' + fmtNum(x.r) + '</span>' +
-        '<span class="pr-e1rm">' + fmtNum(x.e) + ' kg (1RM)</span></div>' +
-        '<div class="pr-bar"><div style="width:' + pct + '%"></div></div></div>';
-    }).join('') + '</div>';
-  }
-  html += '</div>';
+  html += '</div></div>';
 
   box.innerHTML = html;
 
@@ -2289,6 +2497,8 @@ function renderPR() {
     renderChart('chart-pr', prS.map(x => ({ label: shortDate(x.date), y: x.y })), '#ff6b35');
     renderChart('chart-e1', e1.map(x => ({ label: shortDate(x.date), y: x.y })), '#38bdf8');
   }
+
+  renderPRList(box);
 }
 
 /* ==================== PREDYKCJE (Riegel) ==================== */
@@ -2882,9 +3092,7 @@ function renderRaces() {
         '<div class="race-head">' +
         '<div class="race-date">' + fmtLongDate(r.date) + '</div>' +
         '<span class="race-status ' + (r.status === 'ukonczony' ? 'fin' : r.status === 'zapisany' ? 'signed' : '') + '">' + st.label + '</span>' +
-        '<span class="entry-actions">' +
-        '<button class="mini-btn" data-edit-race="' + r.id + '">Edytuj</button>' +
-        '<button class="mini-btn" data-del-race="' + r.id + '">Usuń</button></span></div>' +
+        '<button class="race-menu-btn" data-race-menu="' + r.id + '" aria-label="Menu zawodów">•••</button></div>' +
         '<div class="race-name">' + esc(r.name) + '</div>' + body + '</div>';
     }).join('') + '</div>';
   }
@@ -3725,17 +3933,6 @@ function bindEvents() {
     if (kmBtn) { state.prog.km = Number(kmBtn.dataset.progKm); renderProgress(); }
   });
 
-  const badgesToggle = document.querySelector('[data-badges-toggle]');
-  if (badgesToggle) {
-    badgesToggle.addEventListener('click', () => {
-      state.badgesOpen = !state.badgesOpen;
-      const btn = document.querySelector('[data-badges-toggle]');
-      const collapse = document.getElementById('badges-collapse');
-      if (btn) btn.setAttribute('aria-expanded', state.badgesOpen ? 'true' : 'false');
-      if (collapse) collapse.classList.toggle('open', state.badgesOpen);
-    });
-  }
-
   const summaryBox = document.getElementById('summary-box');
   if (summaryBox) {
     summaryBox.addEventListener('change', e => {
@@ -3798,10 +3995,6 @@ function bindEvents() {
     if (e.target.id === 'race-cancel-edit') { resetRaceForm(); return; }
     const ds = e.target.closest('[data-dist]');
     if (ds) { const el = document.getElementById('race-dist'); if (el) el.value = ds.dataset.dist; return; }
-    const ed = e.target.closest('[data-edit-race]');
-    if (ed) { openRaceSheet(ed.dataset.editRace); return; }
-    const dl = e.target.closest('[data-del-race]');
-    if (dl) deleteRace(dl.dataset.delRace);
   });
 
   document.getElementById('btn-settings').addEventListener('click', () => {
@@ -3822,7 +4015,8 @@ function bindEvents() {
       }
     }
   });
-  document.getElementById('btn-feedback').addEventListener('click', () => {
+  const btnFeedback = document.getElementById('btn-feedback');
+  if (btnFeedback) btnFeedback.addEventListener('click', () => {
     fillReminderSettings();
     fillTrainingSettings();
     renderFeedback();

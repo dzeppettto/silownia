@@ -37,35 +37,22 @@
   </svg>
 
   <header class="app-header">
-    <img class="app-logo" src="logo.png" alt="BetterNM">
-    <div class="header-mascot" aria-hidden="true"><svg viewBox="0 0 120 66" fill="currentColor" aria-hidden="true">
-      <rect x="40" y="20" width="58" height="17" rx="8.5"/>
-      <path d="M94 26 q16 -1 19 -15" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-      <circle cx="32" cy="23" r="11"/>
-      <rect x="9" y="25" width="22" height="10" rx="5"/>
-      <path d="M28 13 q-7 -7 4 -7 q7 0 3 9 q-1 3 -7 1z"/>
-      <circle cx="9" cy="29" r="2.4"/>
-      <rect x="46" y="37" width="7" height="16" rx="3.5"/>
-      <rect x="60" y="37" width="7" height="16" rx="3.5"/>
-      <rect x="74" y="37" width="7" height="16" rx="3.5"/>
-      <rect x="88" y="37" width="7" height="16" rx="3.5"/>
-    </svg></div>
-    <button id="btn-profile" class="profile-badge" aria-label="Zmień profil"></button>
-    <h1 class="header-title" id="header-title">BetterNM</h1>
-    <div class="header-actions">
-      <button id="btn-feedback" class="icon-btn header-btn" aria-label="Zgłoś błąd / uwaga">
-        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
-        </svg>
-      </button>
-      <button id="btn-settings" class="icon-btn header-btn" aria-label="Ustawienia">
-      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <a class="app-wordmark" href="#" id="app-home" aria-label="Treningi — strona główna">
+      <span class="wm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11"/><path d="M3.5 9v6M20.5 9v6"/><path d="M6.5 12h11"/></svg></span>
+      <span class="wm-txt">Treningi</span>
+    </a>
+    <div class="header-spacer"></div>
+    <button id="btn-profile" class="profile-chip" aria-label="Zmień profil">
+      <span class="profile-avatar" id="header-avatar">M</span>
+      <span class="profile-name" id="header-name">Profil</span>
+      <span class="profile-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+    </button>
+    <button id="btn-settings" class="icon-btn header-btn" aria-label="Ustawienia">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     </button>
-    </div>
   </header>
 
   <main id="main">
@@ -113,7 +100,7 @@
       <h2 class="tab-title">Postęp</h2>
       <div id="summary-box"></div>
       <div class="card" id="badges-box">
-        <button type="button" class="card-head" data-badges-toggle aria-expanded="true"><span>Odznaki</span><svg class="card-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>
+        <button type="button" class="card-head" data-card-toggle="badgesOpen" aria-expanded="false"><span>Odznaki</span><svg class="card-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button>
         <div class="card-collapse" id="badges-collapse"><div id="badges-grid"></div></div>
       </div>
       <div id="pr-box"></div>
@@ -167,9 +154,15 @@
     </button>
   </nav>
 
-  <button id="fab" class="fab hidden" aria-label="Dodaj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-  </svg></button>
+  <div id="fab-wrap" class="fab-wrap">
+    <div id="fab-menu" class="fab-menu hidden"></div>
+    <button id="fab" class="fab" aria-label="Dodaj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg></button>
+  </div>
+
+  <!-- ============ MENU KONTEKSTOWE (•••) ============ -->
+  <div id="menu-layer" class="menu-layer hidden"></div>
 
   <!-- ============ MODAL: dzień ============ -->
   <div class="modal-overlay hidden" id="modal-day">
@@ -366,8 +359,12 @@
       </div>
 
       <div class="set-item" id="set-feedback">
-        <button class="set-head" type="button" aria-expanded="false"><span>Uwagi i poprawki</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <button class="set-head" type="button" aria-expanded="true"><span>Uwagi i poprawki</span><svg class="set-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
         <div class="set-body">
+          <div class="fb-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+            <span>Co poprawić w aplikacji?</span>
+          </div>
           <p class="field-hint">Lista rzeczy do poprawy w aplikacji. „Wyślij do autora" przesyła uwagi prosto do dewelopera (nowy Issue na GitHubie).</p>
           <textarea id="feedback-input" rows="3" placeholder="np. dodać tryb ciemny w postępach..."></textarea>
           <div class="fb-toolbar">
@@ -375,12 +372,12 @@
             <input type="file" id="feedback-photo-file" accept="image/*" class="hidden">
             <div id="feedback-photo-preview" class="hidden"></div>
           </div>
-          <div class="modal-actions">
+          <div class="fb-actions">
             <button class="btn primary" id="feedback-add">Dodaj uwagę</button>
             <button class="btn secondary" id="feedback-send">Wyślij do autora</button>
             <button class="btn secondary" id="feedback-copy">Kopiuj listę</button>
           </div>
-          <div id="feedback-list"></div>
+          <div class="fb-list" id="feedback-list"></div>
         </div>
       </div>
 
