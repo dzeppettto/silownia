@@ -12,19 +12,18 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.20';
+const APP_VERSION = 'beta 0.22';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.20',
+  version: 'beta 0.22',
   changes: [
-    'Nowy nagłówek: logo „Treningi", chip aktywnego profilu (awatar + imię) i przycisk ustawień',
-    'Przeprojektowany dashboard „Dzisiaj": kompaktowe powitanie z wagą, podsumowanie „Ten tydzień" (treningi / dystans / objętość) z porównaniem do poprzedniego tygodnia oraz pasek ostatnich 7 dni z etykietami dni i kolorami dyscyplin',
-    'Fioletowy przycisk „+" z menu szybkich akcji zależnych od zakładki (speed-dial)',
-    'Osobiste rekordy (PR): lista najlepszych serii z menu „•••" i wariantami — Rekord / Osobisty rekord (best) / Szacowany 1RM / Usuń z listy',
-    'Karty zawodów z odliczaniem dni do startu i menu „•••"',
-    'Duży stoper czasu treningu w formularzu siłowym',
-    'Przyciski bez majuskułów — czytelniejsze, mniej krzykliwe',
-    'Mikrointerakcje: animacje naciśnięć, płynniejsze przejścia i ładniejsza sekcja uwag'
+    'System typów ćwiczeń: osobiste rekordy zależne od typu (ciężar / powtórzenia / czas / tempo / dystans) — sekcja Postęp rozumie każde ćwiczenie',
+    'Lista ćwiczeń w rozpisce grupowana po partiach mięśniowych z mięśniami drugorzędnymi',
+    'Focus mode (tryb treningu) dostosowany do typu ćwiczenia: podpowiada ciężar, powtórzenia lub czas; animacja „NOWY PR"',
+    'Ustawienia → Trening: przełączniki (switche) zamiast checkboxów',
+    'Przeprojektowana maskotka — jamniczek w 5 odsłonach (spokój, sukces, regeneracja, pustka, świętowanie PR)',
+    'Tło aplikacji z subtelnymi watermarkami zamiast gęstej siatki wzorów',
+    'Naprawa polskich znaków (diakrytyków) w całej aplikacji'
   ]
 };
 
