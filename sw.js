@@ -1,4 +1,4 @@
-const CACHE = 'betternm-v25';
+const CACHE = 'betternm-v26';
 const ASSETS = [
   './',
   './index.html',
