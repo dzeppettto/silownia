@@ -12,20 +12,22 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.19';
+const APP_VERSION = 'beta 0.15';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.19',
+  version: 'beta 0.15',
   changes: [
-    'Nowa zakładka „Dzisiaj”: powitanie, ostatnia waga, treningi/dystans/objętość z ostatnich 7 dni z porównaniem do poprzedniego tygodnia, pasek aktywności, dzisiejszy trening i następne zawody',
-    'Tryb skupienia w treningu siłowym — jedno ćwiczenie na raz, pasek postępu, propozycja ciężaru, wykrywanie rekordu (PR) i stoper przerwy',
-    'Przycisk „+” nad paskiem nawigacji — szybkie dodawanie zależnie od zakładki: wpisu dnia, rozpiski, ćwiczenia, pomiaru zdrowia lub zawodów',
-    'Formularze zdrowia i zawodów jako arkusz wysuwany z dołu (bottom sheet) — historia pomiarów i lista startów zostały w zakładkach',
-    'Okna modalne mają animację wysuwania z dołu i uchwyt',
-    'Odznaki są zwijane i przeniesione do zakładki Kalendarz',
-    'Edycja rozpiski: możesz dodać opis/plan (np. „3 serie po 10 powtórzeń”)',
-    'Do uwagi (flaga) można dołączyć zdjęcie',
-    'Nagłówek pokazuje imię aktywnego profilu'
+    'Ćwiczenia w treningu można zwijać/rozwijać (nagłówek) i oznaczać jako „zrobione” — to trafia też do zapisu',
+    'Smart podpowiedź ciężaru: liczy 1RM (wzór Epleya) i proponuje progres ~2,5% po domkniętym treningu',
+    'Historia pomiarów w Zdrowiu jako lista rozwijana (dotknij datę, by zobaczyć szczegóły)',
+    'Statystyki miesiąca pokazują najczęstsze mięśnie (na podstawie zaznaczonych w treningu)',
+    'Nowość w Ustawieniach → Trening: auto-start stopera odpoczynku po wpisaniu serii (opcja)',
+    'Nowość w Ustawieniach → Trening: auto-wpisanie sugerowanego ciężaru do serii z rozpiski (opcja)',
+    'Przypomnienie o zawodach na dzień przed startem',
+    'Motyw „Auto” w Ustawieniach → Wygląd — jasny w dzień, ciemny w nocy',
+    'Import ze Stravy: wgraj plik z eksportu (activities.csv, .gpx lub .tcx) — biegi i jazdy trafią do kalendarza',
+    'Przycisk zgłaszania uwag (flaga) obok ustawień w nagłówku',
+    'Poprawka: kafelek kolorów akcentu w równych odstępach'
   ]
 };
 
@@ -169,8 +171,7 @@ const ICONS = {
   bike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>',
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
-  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>'
+  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
 };
 
 function icon(name) { return ICONS[name] || ICONS.dumbbell; }
@@ -374,8 +375,7 @@ const state = {
   renameProfileId: null,
   restOpen: false,
   musclesOpen: false,
-  badgesOpen: true,
-  focus: { on: false, idx: 0 }
+  badgesOpen: true
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -472,20 +472,7 @@ function showTab(name) {
   if (name === 'postep') renderProgress();
   if (name === 'zdrowie') renderHealth();
   if (name === 'zawody') renderRaces();
-  const fab = document.getElementById('fab');
-  if (fab) fab.classList.toggle('hidden', name === 'dzis' || name === 'postep');
   window.scrollTo(0, 0);
-}
-
-function fabAction() {
-  if (state.tab === 'kalendarz') { openDay(todayStr()); return; }
-  if (state.tab === 'rozpiska') { openPlanAdd(); return; }
-  if (state.tab === 'trening') {
-    if (state.current.category !== 'silownia') { state.current.category = 'silownia'; state.focus.on = false; renderTraining(); }
-    openAddExercise(); return;
-  }
-  if (state.tab === 'zawody') { openRaceSheet(); return; }
-  if (state.tab === 'zdrowie') { openHealthSheet(); return; }
 }
 
 /* ==================== MODALS ==================== */
@@ -1121,16 +1108,18 @@ function startEdit(kind, id) {
     showTab('trening');
   }
   if (kind === 'health') {
-    if (!data.health.some(x => x.id === id)) return;
+    const h = data.health.find(x => x.id === id);
+    if (!h) return;
+    state.editHealthId = id;
     closeModal('modal-day');
     showTab('zdrowie');
-    openHealthSheet(id);
+    fillHealthForm(h);
   }
   if (kind === 'race') {
     if (!data.races.some(r => r.id === id)) return;
+    state.editRaceId = id;
     closeModal('modal-day');
     showTab('zawody');
-    openRaceSheet(id);
   }
 }
 
@@ -1407,25 +1396,12 @@ function resetCurrent() {
 function renderTraining() {
   const wrap = document.getElementById('training-form');
   const c = state.current;
-
-  if (c.category === 'silownia' && state.focus.on && c.exercises.length) {
-    wrap.innerHTML = renderFocus();
-    updateRestDisplay();
-    workoutClockTick();
-    const fab = document.getElementById('fab');
-    if (fab) fab.classList.add('hidden');
-    return;
-  }
-  const fabEl = document.getElementById('fab');
-  if (fabEl) fabEl.classList.toggle('hidden', state.tab === 'dzis' || state.tab === 'postep');
-
   let html = '<div class="chips">' +
     '<button class="chip' + (c.category === 'silownia' ? ' active' : '') + '" data-cat="silownia">Siłownia</button>' +
     '<button class="chip' + (c.category === 'bieganie' ? ' active' : '') + '" data-cat="bieganie">Bieganie</button>' +
     '<button class="chip' + (c.category === 'rower' ? ' active' : '') + '" data-cat="rower">Rower</button></div>';
 
   if (c.category === 'silownia') {
-    html += '<button class="btn secondary small fz-enter" data-act="fz-enter">' + icon('bolt') + ' Tryb skupienia</button>';
     html += '<div class="rest-acc muscle-acc' + (state.musclesOpen ? ' open' : '') + '">' +
       '<div class="ra-head" data-muscles-toggle>' +
       icon('dumbbell') +
@@ -1547,101 +1523,6 @@ function renderTraining() {
   wrap.innerHTML = html;
   if (c.category === 'bieganie') updateRunStats();
   if (c.category === 'rower') updateBikeStats();
-}
-
-function renderFocus() {
-  const c = state.current;
-  const exs = c.exercises;
-  const idx = Math.max(0, Math.min(state.focus.idx, exs.length - 1));
-  state.focus.idx = idx;
-  const ex = exs[idx];
-  const last = lastResultFor(ex.name);
-  const sug = last ? suggestWeight(last.sets) : null;
-  const sets = (ex.sets || []).filter(s => s.w !== '' || s.r !== '');
-  const running = restTimer.timer !== null;
-  const maxW = sets.reduce((m, s) => Math.max(m, num(s.w)), 0);
-
-  let html = '<div class="fz-top">' +
-    '<button class="btn secondary small" data-act="fz-exit">' + icon('chev') + ' Widok pełny</button>' +
-    '<button class="fz-clock" data-act="fz-clock">' + icon('clock') + ' <span id="wt-time">' + fmtClock(workoutClockTotal()) + '</span></button></div>';
-  html += '<div class="fz-progress"><div class="fz-prog-bar"><div style="width:' + Math.round(((idx + 1) / exs.length) * 100) + '%"></div></div>' +
-    '<span class="fz-prog-txt">Ćwiczenie ' + (idx + 1) + ' z ' + exs.length + '</span></div>';
-
-  html += '<div class="fz-ex card">' +
-    '<div class="fz-ex-head"><span class="fz-ex-num">' + (idx + 1) + '</span><div class="fz-ex-name">' + esc(ex.name) + '</div></div>';
-  if (last) {
-    html += '<div class="fz-last">Ostatnio: <b>' + esc(last.text) + '</b> <span class="lr-date">' + shortDate(last.date) + '</span>' +
-      (sug ? '<div class="fz-suggest">Propozycja ciężaru: <b>' + fmtNum(sug) + ' kg</b></div>' : '') + '</div>';
-  } else {
-    html += '<div class="fz-last muted">Pierwszy raz — brak historii.</div>';
-  }
-
-  if (sets.length) {
-    html += '<div class="fz-sets">' + sets.map((s, j) =>
-      '<div class="fz-set">' +
-      '<span class="fz-set-ico">' + icon('check') + '</span>' +
-      '<span class="fz-set-num">' + (j + 1) + '</span>' +
-      '<span class="fz-set-w">' + (num(s.w) > 0 ? fmtNum(s.w) + ' kg' : '?') + '</span>' +
-      '<span class="fz-set-x">×</span>' +
-      '<span class="fz-set-r">' + (s.r || '?') + '</span>' +
-      (num(s.w) > 0 && num(s.w) === maxW && maxW > 0 ? '<span class="fz-set-pr">PR</span>' : '') +
-      '</div>').join('') + '</div>';
-  } else {
-    html += '<div class="fz-sets empty">Brak zaliczonych serii.</div>';
-  }
-
-  html += '<div class="fz-inputs">' +
-    '<input id="fz-w" type="number" step="any" inputmode="decimal" placeholder="kg" value="' + (!sets.length && sug ? sug : '') + '">' +
-    '<input id="fz-r" type="number" step="any" inputmode="numeric" placeholder="powt.">' +
-    '</div>' +
-    '<div class="fz-flash" id="fz-flash" aria-live="polite"></div>' +
-    '<button class="btn primary fz-go" data-act="fz-set">' + icon('check') + ' ZALICZ SERIĘ</button>';
-
-  html += '<div class="fz-nav">' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-prev"' + (idx === 0 ? ' disabled' : '') + '>Poprzednie</button>' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-done">' + (ex.done ? 'Wznowić' : 'Zakończ') + '</button>' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-next"' + (idx === exs.length - 1 ? ' disabled' : '') + '>Następne</button>' +
-    '</div></div>';
-
-  html += '<div class="card fz-rest">' +
-    '<div class="fz-rest-head">' + icon('clock') + '<span>Przerwa</span>' +
-    '<span class="rt-time' + (running ? ' running' : '') + '" id="rt-time">' + restTimeText() + '</span></div>' +
-    '<div class="chips">' + [60, 90, 120, 180].map(s =>
-      '<button class="chip rt-chip' + (restTimer.total === s ? ' active' : '') + '" data-rt="' + s + '">' + s + 's</button>').join('') + '</div>' +
-    '<div class="fz-rest-actions">' +
-    '<button class="btn secondary small" id="rt-start">' + (restTimer.timer ? 'Restart' : 'Start') + '</button>' +
-    '<button class="btn secondary small" id="rt-stop">Stop</button></div></div>';
-
-  return html;
-}
-
-function focusLogSet(exIdx) {
-  const ex = state.current.exercises[exIdx];
-  if (!ex) return;
-  const wEl = document.getElementById('fz-w');
-  const rEl = document.getElementById('fz-r');
-  const w = wEl ? wEl.value : '';
-  const r = rEl ? rEl.value : '';
-  if (w === '' && r === '') { toast('Wpisz ciężar lub powtórzenia'); return; }
-  const last = lastResultFor(ex.name);
-  const bestW = last ? last.sets.reduce((m, s) => Math.max(m, num(s.w)), 0) : 0;
-  const isPR = num(w) > 0 && num(w) > bestW;
-  const sets = ex.sets || (ex.sets = []);
-  const empty = sets.find(s => s.w === '' && s.r === '');
-  if (empty) { empty.w = w; empty.r = r; } else { sets.push({ w: w, r: r }); }
-  if (wEl) wEl.value = '';
-  if (rEl) rEl.value = '';
-  if (getTrainingPrefs().restAuto) startRest(restTimer.total);
-  if (navigator.vibrate) navigator.vibrate(isPR ? [40, 30, 40] : [20]);
-  renderFocus();
-  const flash = document.getElementById('fz-flash');
-  if (flash) {
-    flash.textContent = isPR ? 'NOWY PR — ' + fmtNum(num(w)) + ' kg!' : '✓ Zaliczone';
-    flash.classList.remove('show');
-    void flash.offsetWidth;
-    flash.classList.add('show');
-  }
-  if (isPR) toast('Nowy rekord: ' + fmtNum(num(w)) + ' kg (' + ex.name + ')');
 }
 
 function renderRunSplits() {
@@ -2565,8 +2446,24 @@ function renderHealth() {
 
   html += '<div id="goal-box"></div>';
 
+  html += '<div class="card"><h3>' + (state.editHealthId ? 'Edytuj wpis' : 'Nowy wpis') + '</h3>';
+  html += '<div><label class="field-label">Data</label><input id="h-date" type="date" value="' + todayStr() + '"></div>';
+  const fields = [
+    { id: 'h-weight', lbl: 'Waga (kg)' },
+    { id: 'h-fatpct', lbl: 'Body fat (%)' },
+    { id: 'h-muscle', lbl: 'Mięśnie (kg)' },
+    { id: 'h-fat', lbl: 'Tłuszcz (kg)' }
+  ];
+  html += '<div class="form-row"><div><label class="field-label">' + fields[0].lbl + '</label><input id="' + fields[0].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
+    '<div><label class="field-label">' + fields[1].lbl + '</label><input id="' + fields[1].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
+  html += '<div class="form-row"><div><label class="field-label">' + fields[2].lbl + '</label><input id="' + fields[2].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
+    '<div><label class="field-label">' + fields[3].lbl + '</label><input id="' + fields[3].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
+  html += '<div class="form-actions">';
+  if (state.editHealthId) html += '<button class="btn secondary" id="btn-cancel-health">Anuluj</button>';
+  html += '<button class="btn primary" id="btn-save-health">' + (state.editHealthId ? 'Zapisz zmiany' : 'Dodaj wpis') + '</button></div></div>';
+
   html += '<div class="card"><h3>Historia pomiarów</h3>';
-  if (!sorted.length) html += '<div class="chart-empty">Brak pomiarów. Dodaj pierwszy przyciskiem +.</div>';
+  if (!sorted.length) html += '<div class="chart-empty">Brak pomiarów. Dodaj pierwszy powyżej.</div>';
   else {
     html += '<div class="health-list">' + sorted.map(h => {
       const open = !!state.healthOpen[h.id];
@@ -2593,29 +2490,7 @@ function renderHealth() {
 
   renderWeightGoal();
   renderPhotos();
-}
 
-function healthFormHtml() {
-  const editing = state.editHealthId ? data.health.find(x => x.id === state.editHealthId) : null;
-  let html = '<div id="health-sheet"><div class="card"><h3>' + (editing ? 'Edytuj pomiar' : 'Nowy pomiar') + '</h3>';
-  html += '<div><label class="field-label">Data</label><input id="h-date" type="date" value="' + todayStr() + '"></div>';
-  html += '<div class="form-row"><div><label class="field-label">Waga (kg)</label><input id="h-weight" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
-    '<div><label class="field-label">Body fat (%)</label><input id="h-fatpct" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
-  html += '<div class="form-row"><div><label class="field-label">Mięśnie (kg)</label><input id="h-muscle" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
-    '<div><label class="field-label">Tłuszcz (kg)</label><input id="h-fat" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
-  html += '<div class="form-actions">' +
-    '<button class="btn secondary" id="btn-cancel-health">Anuluj</button>' +
-    '<button class="btn primary" id="btn-save-health">' + (editing ? 'Zapisz zmiany' : 'Dodaj wpis') + '</button></div></div></div>';
-  return html;
-}
-
-function openHealthSheet(id) {
-  state.editHealthId = id || null;
-  const title = document.getElementById('sheet-title');
-  const body = document.getElementById('sheet-body');
-  if (title) title.textContent = state.editHealthId ? 'Edytuj pomiar' : 'Nowy pomiar';
-  if (body) body.innerHTML = healthFormHtml();
-  openModal('modal-sheet');
   if (state.editHealthId) {
     const h = data.health.find(x => x.id === state.editHealthId);
     if (h) fillHealthForm(h);
@@ -2650,7 +2525,6 @@ function saveHealth() {
   }
   save();
   toast('Zapisano pomiary');
-  closeModal('modal-sheet');
   renderHealth();
   renderCalendar();
 }
@@ -2819,10 +2693,13 @@ function racesSorted() {
   return data.races.slice().sort((a, b) => a.date < b.date ? -1 : 1);
 }
 
-function raceFormHtml() {
+function renderRaces() {
+  const wrap = document.getElementById('races-form');
+  if (!wrap) return;
   const editing = state.editRaceId ? data.races.find(r => r.id === state.editRaceId) : null;
   const today = todayStr();
-  let html = '<div id="races-sheet"><div class="card"><h3>' + (editing ? 'Edytuj zawody' : 'Dodaj zawody') + '</h3>';
+
+  let html = '<div class="card"><h3>' + (editing ? 'Edytuj zawody' : 'Dodaj zawody') + '</h3>';
   if (editing) html += '<div class="race-editing">Edycja: ' + esc(editing.name) + ' <button class="mini-btn" id="race-cancel-edit">Anuluj</button></div>';
   html += '<div><label class="field-label">Nazwa zawodów</label><input id="race-name" type="text" placeholder="np. Półmaraton Poznań" value="' + esc(editing ? editing.name : '') + '"></div>';
   html += '<div class="form-row"><div><label class="field-label">Data</label><input id="race-date" type="date" value="' + (editing ? editing.date : today) + '"></div>' +
@@ -2838,27 +2715,11 @@ function raceFormHtml() {
   html += '<div class="form-row"><div><label class="field-label">Cel (czas)</label><input id="race-goal" type="text" inputmode="decimal" placeholder="np. 1:45:00" value="' + esc(editing ? editing.goal || '' : '') + '"></div>' +
     '<div><label class="field-label">Wynik (po starcie)</label><input id="race-result" type="text" inputmode="decimal" placeholder="np. 1:42:30" value="' + esc(editing ? editing.result || '' : '') + '"></div></div>';
   html += '<div><label class="field-label">Notatki</label><input id="race-notes" type="text" placeholder="np. pakiet startowy, strój" value="' + esc(editing ? editing.notes || '' : '') + '"></div>';
-  html += '<div class="form-actions"><button class="btn primary" id="btn-save-race">' + (editing ? 'Zapisz zmiany' : 'Dodaj zawody') + '</button></div></div></div>';
-  return html;
-}
-
-function openRaceSheet(id) {
-  state.editRaceId = id || null;
-  const title = document.getElementById('sheet-title');
-  const body = document.getElementById('sheet-body');
-  if (title) title.textContent = state.editRaceId ? 'Edytuj zawody' : 'Dodaj zawody';
-  if (body) body.innerHTML = raceFormHtml();
-  openModal('modal-sheet');
-}
-
-function renderRaces() {
-  const wrap = document.getElementById('races-form');
-  if (!wrap) return;
-  const today = todayStr();
+  html += '<div class="form-actions"><button class="btn primary" id="btn-save-race">' + (editing ? 'Zapisz zmiany' : 'Dodaj zawody') + '</button></div></div>';
 
   const sorted = racesSorted();
-  let html = '<div class="card"><h3>Lista startów</h3>';
-  if (!sorted.length) html += '<div class="chart-empty">Brak zawodów. Dodaj pierwsze przyciskiem +.</div>';
+  html += '<div class="card"><h3>Lista startów</h3>';
+  if (!sorted.length) html += '<div class="chart-empty">Brak zawodów. Dodaj pierwszy powyżej.</div>';
   else {
     html += '<div class="race-list">' + sorted.map(r => {
       const st = RACE_STATUSES.find(s => s.id === r.status) || RACE_STATUSES[0];
@@ -2895,7 +2756,6 @@ function renderRaces() {
 
 function resetRaceForm() {
   state.editRaceId = null;
-  closeModal('modal-sheet');
   renderRaces();
 }
 
@@ -2924,7 +2784,6 @@ function saveRace() {
   }
   state.editRaceId = null;
   save();
-  closeModal('modal-sheet');
   renderRaces();
   if (state.tab === 'kalendarz') renderCalendar();
 }
@@ -3416,8 +3275,6 @@ setInterval(() => { if (getTheme() === 'auto') applyTheme('auto'); }, 60000);
 
 function bindEvents() {
   document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  const fab = document.getElementById('fab');
-  if (fab) fab.addEventListener('click', fabAction);
 
   const dashTab = document.getElementById('tab-dzis');
   if (dashTab) {
@@ -3496,7 +3353,6 @@ function bindEvents() {
     state.editHealthId = null;
     closeModal('modal-day');
     showTab('zdrowie');
-    openHealthSheet();
     const el = document.getElementById('h-date');
     if (el) el.value = state.dayDate || todayStr();
   });
@@ -3601,24 +3457,6 @@ function bindEvents() {
       if (a === 'del-ex') delEx(ex);
       if (a === 'toggle-done') toggleExDone(ex);
       if (a === 'clear-plan') { clearPlanFromWorkout(); renderTraining(); return; }
-      if (a === 'fz-enter') { state.focus.on = true; state.focus.idx = 0; renderTraining(); return; }
-      if (a === 'fz-exit') { state.focus.on = false; renderTraining(); return; }
-      if (a === 'fz-clock') { toggleWorkoutClock(); return; }
-      if (a === 'fz-set') { focusLogSet(state.focus.idx); return; }
-      if (a === 'fz-next') { state.focus.idx = Math.min(state.focus.idx + 1, state.current.exercises.length - 1); renderTraining(); return; }
-      if (a === 'fz-prev') { state.focus.idx = Math.max(state.focus.idx - 1, 0); renderTraining(); return; }
-      if (a === 'fz-done') {
-        const cur = state.current.exercises[state.focus.idx];
-        if (cur) cur.done = !cur.done;
-        if (state.focus.idx < state.current.exercises.length - 1) {
-          state.focus.idx++;
-          renderTraining();
-        } else {
-          state.focus.on = false;
-          renderTraining();
-        }
-        return;
-      }
       return;
     }
     const exToggle = e.target.closest('[data-ex-toggle]');
@@ -3744,16 +3582,15 @@ function bindEvents() {
     });
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#health-form, #health-sheet')) return;
+  document.getElementById('health-form').addEventListener('click', e => {
     if (e.target.id === 'btn-save-health') { saveHealth(); return; }
-    if (e.target.id === 'btn-cancel-health') { state.editHealthId = null; closeModal('modal-sheet'); renderHealth(); return; }
+    if (e.target.id === 'btn-cancel-health') { state.editHealthId = null; renderHealth(); return; }
     if (e.target.id === 'btn-save-goal') { saveGoalWeight(); return; }
     const ed = e.target.closest('[data-edit]');
     const dl = e.target.closest('[data-del]');
     if (ed) {
       const [kind, id] = ed.dataset.edit.split(':');
-      if (kind === 'health') { openHealthSheet(id); return; }
+      if (kind === 'health') { state.editHealthId = id; renderHealth(); }
     }
     if (dl) {
       const [kind, id] = dl.dataset.del.split(':');
@@ -3792,17 +3629,19 @@ function bindEvents() {
     });
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#races-form, #races-sheet')) return;
-    if (e.target.id === 'btn-save-race') { saveRace(); return; }
-    if (e.target.id === 'race-cancel-edit') { resetRaceForm(); return; }
-    const ds = e.target.closest('[data-dist]');
-    if (ds) { const el = document.getElementById('race-dist'); if (el) el.value = ds.dataset.dist; return; }
-    const ed = e.target.closest('[data-edit-race]');
-    if (ed) { openRaceSheet(ed.dataset.editRace); return; }
-    const dl = e.target.closest('[data-del-race]');
-    if (dl) deleteRace(dl.dataset.delRace);
-  });
+  const racesForm = document.getElementById('races-form');
+  if (racesForm) {
+    racesForm.addEventListener('click', e => {
+      if (e.target.id === 'btn-save-race') { saveRace(); return; }
+      if (e.target.id === 'race-cancel-edit') { resetRaceForm(); return; }
+      const ds = e.target.closest('[data-dist]');
+      if (ds) { document.getElementById('race-dist').value = ds.dataset.dist; return; }
+      const ed = e.target.closest('[data-edit-race]');
+      if (ed) { state.editRaceId = ed.dataset.editRace; renderRaces(); return; }
+      const dl = e.target.closest('[data-del-race]');
+      if (dl) deleteRace(dl.dataset.delRace);
+    });
+  }
 
   document.getElementById('btn-settings').addEventListener('click', () => {
     fillReminderSettings();

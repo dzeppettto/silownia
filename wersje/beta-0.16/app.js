@@ -12,20 +12,22 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.19';
+const APP_VERSION = 'beta 0.15';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.19',
+  version: 'beta 0.15',
   changes: [
-    'Nowa zakładka „Dzisiaj”: powitanie, ostatnia waga, treningi/dystans/objętość z ostatnich 7 dni z porównaniem do poprzedniego tygodnia, pasek aktywności, dzisiejszy trening i następne zawody',
-    'Tryb skupienia w treningu siłowym — jedno ćwiczenie na raz, pasek postępu, propozycja ciężaru, wykrywanie rekordu (PR) i stoper przerwy',
-    'Przycisk „+” nad paskiem nawigacji — szybkie dodawanie zależnie od zakładki: wpisu dnia, rozpiski, ćwiczenia, pomiaru zdrowia lub zawodów',
-    'Formularze zdrowia i zawodów jako arkusz wysuwany z dołu (bottom sheet) — historia pomiarów i lista startów zostały w zakładkach',
-    'Okna modalne mają animację wysuwania z dołu i uchwyt',
-    'Odznaki są zwijane i przeniesione do zakładki Kalendarz',
-    'Edycja rozpiski: możesz dodać opis/plan (np. „3 serie po 10 powtórzeń”)',
-    'Do uwagi (flaga) można dołączyć zdjęcie',
-    'Nagłówek pokazuje imię aktywnego profilu'
+    'Ćwiczenia w treningu można zwijać/rozwijać (nagłówek) i oznaczać jako „zrobione” — to trafia też do zapisu',
+    'Smart podpowiedź ciężaru: liczy 1RM (wzór Epleya) i proponuje progres ~2,5% po domkniętym treningu',
+    'Historia pomiarów w Zdrowiu jako lista rozwijana (dotknij datę, by zobaczyć szczegóły)',
+    'Statystyki miesiąca pokazują najczęstsze mięśnie (na podstawie zaznaczonych w treningu)',
+    'Nowość w Ustawieniach → Trening: auto-start stopera odpoczynku po wpisaniu serii (opcja)',
+    'Nowość w Ustawieniach → Trening: auto-wpisanie sugerowanego ciężaru do serii z rozpiski (opcja)',
+    'Przypomnienie o zawodach na dzień przed startem',
+    'Motyw „Auto” w Ustawieniach → Wygląd — jasny w dzień, ciemny w nocy',
+    'Import ze Stravy: wgraj plik z eksportu (activities.csv, .gpx lub .tcx) — biegi i jazdy trafią do kalendarza',
+    'Przycisk zgłaszania uwag (flaga) obok ustawień w nagłówku',
+    'Poprawka: kafelek kolorów akcentu w równych odstępach'
   ]
 };
 
@@ -169,8 +171,7 @@ const ICONS = {
   bike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>',
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
-  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>'
+  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
 };
 
 function icon(name) { return ICONS[name] || ICONS.dumbbell; }
@@ -351,7 +352,7 @@ function save() {
 }
 
 const state = {
-  tab: 'dzis',
+  tab: 'kalendarz',
   calYear: 0,
   calMonth: 0,
   dayDate: null,
@@ -374,8 +375,7 @@ const state = {
   renameProfileId: null,
   restOpen: false,
   musclesOpen: false,
-  badgesOpen: true,
-  focus: { on: false, idx: 0 }
+  badgesOpen: true
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -465,27 +465,13 @@ function showTab(name) {
   state.tab = name;
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
-  if (name === 'dzis') renderDashboard();
   if (name === 'kalendarz') renderCalendar();
   if (name === 'rozpiska') renderPlans();
   if (name === 'trening') renderTraining();
   if (name === 'postep') renderProgress();
   if (name === 'zdrowie') renderHealth();
   if (name === 'zawody') renderRaces();
-  const fab = document.getElementById('fab');
-  if (fab) fab.classList.toggle('hidden', name === 'dzis' || name === 'postep');
   window.scrollTo(0, 0);
-}
-
-function fabAction() {
-  if (state.tab === 'kalendarz') { openDay(todayStr()); return; }
-  if (state.tab === 'rozpiska') { openPlanAdd(); return; }
-  if (state.tab === 'trening') {
-    if (state.current.category !== 'silownia') { state.current.category = 'silownia'; state.focus.on = false; renderTraining(); }
-    openAddExercise(); return;
-  }
-  if (state.tab === 'zawody') { openRaceSheet(); return; }
-  if (state.tab === 'zdrowie') { openHealthSheet(); return; }
 }
 
 /* ==================== MODALS ==================== */
@@ -574,7 +560,7 @@ function switchProfile(id) {
   state.dayDate = null;
   updateProfileBadge();
   closeProfileScreen();
-  showTab('dzis');
+  showTab('kalendarz');
   toast('Profil: ' + activeProfile().name);
   if (profileHasPin(activeProfile())) openLockScreen();
 }
@@ -622,133 +608,6 @@ function saveRenameProfile() {
   toast('Nazwa profilu zmieniona');
   cancelRenameProfile();
   renderProfileScreen();
-}
-
-/* ==================== DZIŚ (DASHBOARD) ==================== */
-
-function rangeActivity(offsetFrom, offsetTo) {
-  const e = new Date(); e.setDate(e.getDate() - offsetFrom);
-  const s = new Date(); s.setDate(s.getDate() - offsetTo);
-  const s0 = dateStr(s.getFullYear(), s.getMonth(), s.getDate());
-  const e0 = dateStr(e.getFullYear(), e.getMonth(), e.getDate());
-  const inR = x => x.date >= s0 && x.date <= e0;
-  let days = new Set(), km = 0, vol = 0, logs = 0, runs = 0;
-  data.logs.forEach(l => {
-    if (!inR(l)) return;
-    logs++; days.add(l.date);
-    l.exercises.forEach(ex => ex.sets.forEach(st => vol += num(st.w) * num(st.r)));
-  });
-  data.runs.forEach(r => {
-    if (!inR(r)) return;
-    runs++; days.add(r.date); km += num(r.distance);
-  });
-  return { days: days.size, logs: logs, runs: runs, km: km, vol: vol };
-}
-
-function dashTrend(cur, prev) {
-  if (!prev) return null;
-  if (cur === prev) return 0;
-  return Math.round(((cur - prev) / Math.max(prev, 0.0001)) * 100);
-}
-
-function renderDashboard() {
-  const today = todayStr();
-  const now = new Date();
-  const hour = now.getHours();
-  const greet = hour < 6 ? 'Dobranoc' : hour < 12 ? 'Dzień dobry' : hour < 18 ? 'Hej' : 'Witaj';
-  const prof = activeProfile();
-  const name = prof.name.trim().split(/\s+/)[0] || '';
-
-  let html = '<div class="dash-hero card">' +
-    (mascotOn() ? '<div class="dash-hero-mascot">' + jamnikSVG(54) + '</div>' : '') +
-    '<div><div class="dash-greet">' + esc(greet) + (name ? ', ' + esc(name) : '') + '</div>' +
-    '<div class="dash-date">' + fmtLongDate(today) + '</div></div></div>';
-  document.getElementById('dash-hero').innerHTML = html;
-
-  const cur = rangeActivity(0, 6);
-  const prev = rangeActivity(7, 13);
-  const trend = (d, goodUp) => {
-    if (d === null || d === undefined || isNaN(d)) return '';
-    if (d === 0) return '<span class="stat-trend same">0%</span>';
-    const up = d > 0, good = up === goodUp;
-    return '<span class="stat-trend ' + (good ? 'good' : 'bad') + '">' + (up ? '↑' : '↓') + Math.abs(d) + '%</span>';
-  };
-
-  const hs = data.health.slice().sort((a, b) => a.date < b.date ? -1 : 1);
-  const wLast = hs[hs.length - 1], wPrev = hs[hs.length - 2];
-  let wDelta = null;
-  if (wLast && wPrev) wDelta = Math.round((num(wLast.weight) - num(wPrev.weight)) * 10) / 10;
-  const wTrend = wDelta === null ? '' :
-    (wDelta === 0 ? '<span class="stat-trend same">0 kg</span>' :
-      '<span class="stat-trend ' + (wDelta <= 0 ? 'good' : 'bad') + '">' + (wDelta > 0 ? '↑' : '↓') + Math.abs(wDelta) + ' kg</span>');
-
-  let weekBars = '';
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
-    const on = data.logs.some(l => l.date === ds) || data.runs.some(r => r.date === ds);
-    const lbl = DOWS[d.getDay() === 0 ? 6 : d.getDay() - 1];
-    weekBars += '<div class="wk-bar' + (on ? ' on' : '') + '" title="' + lbl + ' ' + shortDate(ds) + '"></div>';
-  }
-
-  const sc = (val, lbl, tr) => '<div class="stat-card"><div class="stat-val">' + val + '</div><div class="stat-lbl">' + lbl + '</div>' + (tr ? tr : '') + '</div>';
-  html = '<div class="dash-stats">' +
-    sc((wLast ? fmtNum(num(wLast.weight)) + ' kg' : '—'), 'Ostatnia waga', wTrend) +
-    sc(cur.days, 'Treningi · 7 dni', trend(dashTrend(cur.days, prev.days), true)) +
-    sc(cur.km > 0 ? fmtNum(cur.km) + ' km' : '—', 'Dystans · 7 dni', trend(dashTrend(cur.km, prev.km), true)) +
-    sc(cur.vol > 0 ? fmtNum(cur.vol) + ' kg' : '—', 'Objętość · 7 dni', trend(dashTrend(cur.vol, prev.vol), true)) +
-    '</div>' +
-    '<div class="card"><div class="wk-head"><span class="wk-title">Ostatnie 7 dni</span>' +
-    '<span class="wk-days">' + cur.days + '/' + 7 + ' dni aktywnych</span></div><div class="wk-bars">' + weekBars + '</div></div>';
-  document.getElementById('dash-stats').innerHTML = html;
-
-  const todLogs = data.logs.filter(l => l.date === today);
-  const todRuns = data.runs.filter(r => r.date === today);
-  html = '<div class="card"><div class="dash-card-head"><h3>Dzisiejszy trening</h3></div>';
-  if (!todLogs.length && !todRuns.length) {
-    html += '<div class="dash-empty">' +
-      (mascotOn() ? jamnikSVG(64) : '<div class="dash-empty-ico">' + icon('dumbbell') + '</div>') +
-      '<p>Jeszcze nic nie zanotowałeś dzisiaj.</p></div>' +
-      '<button class="btn primary dash-start" data-dash-start="trening">' + icon('dumbbell') + ' Rozpocznij trening</button>';
-  } else {
-    todLogs.forEach(l => {
-      const kcal = num(l.kcal);
-      html += '<div class="dash-today-item">' +
-        '<div class="dash-today-ico">' + icon(PLAN_ICONS[l.planId] || 'dumbbell') + '</div>' +
-        '<div class="dash-today-body"><div class="dash-today-name">' + esc(l.title || 'Trening siłowy') + '</div>' +
-        '<div class="dash-today-sub">' + l.exercises.length + ' ćwiczeń' + (kcal ? ' · ' + fmtNum(kcal) + ' kcal' : '') + '</div></div>' +
-        '<span class="dash-today-check">✓</span></div>';
-    });
-    todRuns.forEach(r => {
-      html += '<div class="dash-today-item">' +
-        '<div class="dash-today-ico">' + icon('shoe') + '</div>' +
-        '<div class="dash-today-body"><div class="dash-today-name">' + esc(RUN_TYPES[r.type] || 'Bieg') + '</div>' +
-        '<div class="dash-today-sub">' + fmtNum(r.distance) + ' km · ' + formatDur(num(r.duration)) + (r.hr ? ' · ' + fmtNum(r.hr) + ' bpm' : '') + '</div></div>' +
-        '<span class="dash-today-check">✓</span></div>';
-    });
-  }
-  html += '</div>';
-  document.getElementById('dash-today').innerHTML = html;
-
-  const next = racesSorted().find(r => r.date >= today && r.status !== 'ukonczony');
-  html = '';
-  if (next) {
-    const days = dateDiffDays(today, next.date);
-    html = '<div class="card dash-race">' +
-      '<div class="dash-race-count"><span class="dash-race-num">' + days + '</span>' +
-      '<span class="dash-race-days">' + (days === 1 ? 'dzień' : 'dni') + '</span></div>' +
-      '<div class="dash-race-info"><div class="dash-race-label">Następne zawody</div>' +
-      '<div class="dash-race-name">' + esc(next.name) + '</div>' +
-      '<div class="dash-race-meta">' + fmtLongDate(next.date) +
-      (next.dist ? ' · ' + fmtNum(next.dist) + ' km' : '') + (next.city ? ' · ' + esc(next.city) : '') + '</div></div></div>';
-  } else {
-    html = '<div class="card dash-race dash-race-none">' +
-      '<div class="dash-empty small">' +
-      (mascotOn() ? jamnikSVG(56) : '<div class="dash-empty-ico">' + icon('flag') + '</div>') +
-      '<p>Brak zaplanowanych zawodów.</p></div>' +
-      '<button class="btn secondary dash-start" data-dash-start="zawody">' + icon('flag') + ' Dodaj zawody</button></div>';
-  }
-  document.getElementById('dash-race').innerHTML = html;
 }
 
 /* ==================== KALENDARZ ==================== */
@@ -1121,16 +980,18 @@ function startEdit(kind, id) {
     showTab('trening');
   }
   if (kind === 'health') {
-    if (!data.health.some(x => x.id === id)) return;
+    const h = data.health.find(x => x.id === id);
+    if (!h) return;
+    state.editHealthId = id;
     closeModal('modal-day');
     showTab('zdrowie');
-    openHealthSheet(id);
+    fillHealthForm(h);
   }
   if (kind === 'race') {
     if (!data.races.some(r => r.id === id)) return;
+    state.editRaceId = id;
     closeModal('modal-day');
     showTab('zawody');
-    openRaceSheet(id);
   }
 }
 
@@ -1407,25 +1268,12 @@ function resetCurrent() {
 function renderTraining() {
   const wrap = document.getElementById('training-form');
   const c = state.current;
-
-  if (c.category === 'silownia' && state.focus.on && c.exercises.length) {
-    wrap.innerHTML = renderFocus();
-    updateRestDisplay();
-    workoutClockTick();
-    const fab = document.getElementById('fab');
-    if (fab) fab.classList.add('hidden');
-    return;
-  }
-  const fabEl = document.getElementById('fab');
-  if (fabEl) fabEl.classList.toggle('hidden', state.tab === 'dzis' || state.tab === 'postep');
-
   let html = '<div class="chips">' +
     '<button class="chip' + (c.category === 'silownia' ? ' active' : '') + '" data-cat="silownia">Siłownia</button>' +
     '<button class="chip' + (c.category === 'bieganie' ? ' active' : '') + '" data-cat="bieganie">Bieganie</button>' +
     '<button class="chip' + (c.category === 'rower' ? ' active' : '') + '" data-cat="rower">Rower</button></div>';
 
   if (c.category === 'silownia') {
-    html += '<button class="btn secondary small fz-enter" data-act="fz-enter">' + icon('bolt') + ' Tryb skupienia</button>';
     html += '<div class="rest-acc muscle-acc' + (state.musclesOpen ? ' open' : '') + '">' +
       '<div class="ra-head" data-muscles-toggle>' +
       icon('dumbbell') +
@@ -1547,101 +1395,6 @@ function renderTraining() {
   wrap.innerHTML = html;
   if (c.category === 'bieganie') updateRunStats();
   if (c.category === 'rower') updateBikeStats();
-}
-
-function renderFocus() {
-  const c = state.current;
-  const exs = c.exercises;
-  const idx = Math.max(0, Math.min(state.focus.idx, exs.length - 1));
-  state.focus.idx = idx;
-  const ex = exs[idx];
-  const last = lastResultFor(ex.name);
-  const sug = last ? suggestWeight(last.sets) : null;
-  const sets = (ex.sets || []).filter(s => s.w !== '' || s.r !== '');
-  const running = restTimer.timer !== null;
-  const maxW = sets.reduce((m, s) => Math.max(m, num(s.w)), 0);
-
-  let html = '<div class="fz-top">' +
-    '<button class="btn secondary small" data-act="fz-exit">' + icon('chev') + ' Widok pełny</button>' +
-    '<button class="fz-clock" data-act="fz-clock">' + icon('clock') + ' <span id="wt-time">' + fmtClock(workoutClockTotal()) + '</span></button></div>';
-  html += '<div class="fz-progress"><div class="fz-prog-bar"><div style="width:' + Math.round(((idx + 1) / exs.length) * 100) + '%"></div></div>' +
-    '<span class="fz-prog-txt">Ćwiczenie ' + (idx + 1) + ' z ' + exs.length + '</span></div>';
-
-  html += '<div class="fz-ex card">' +
-    '<div class="fz-ex-head"><span class="fz-ex-num">' + (idx + 1) + '</span><div class="fz-ex-name">' + esc(ex.name) + '</div></div>';
-  if (last) {
-    html += '<div class="fz-last">Ostatnio: <b>' + esc(last.text) + '</b> <span class="lr-date">' + shortDate(last.date) + '</span>' +
-      (sug ? '<div class="fz-suggest">Propozycja ciężaru: <b>' + fmtNum(sug) + ' kg</b></div>' : '') + '</div>';
-  } else {
-    html += '<div class="fz-last muted">Pierwszy raz — brak historii.</div>';
-  }
-
-  if (sets.length) {
-    html += '<div class="fz-sets">' + sets.map((s, j) =>
-      '<div class="fz-set">' +
-      '<span class="fz-set-ico">' + icon('check') + '</span>' +
-      '<span class="fz-set-num">' + (j + 1) + '</span>' +
-      '<span class="fz-set-w">' + (num(s.w) > 0 ? fmtNum(s.w) + ' kg' : '?') + '</span>' +
-      '<span class="fz-set-x">×</span>' +
-      '<span class="fz-set-r">' + (s.r || '?') + '</span>' +
-      (num(s.w) > 0 && num(s.w) === maxW && maxW > 0 ? '<span class="fz-set-pr">PR</span>' : '') +
-      '</div>').join('') + '</div>';
-  } else {
-    html += '<div class="fz-sets empty">Brak zaliczonych serii.</div>';
-  }
-
-  html += '<div class="fz-inputs">' +
-    '<input id="fz-w" type="number" step="any" inputmode="decimal" placeholder="kg" value="' + (!sets.length && sug ? sug : '') + '">' +
-    '<input id="fz-r" type="number" step="any" inputmode="numeric" placeholder="powt.">' +
-    '</div>' +
-    '<div class="fz-flash" id="fz-flash" aria-live="polite"></div>' +
-    '<button class="btn primary fz-go" data-act="fz-set">' + icon('check') + ' ZALICZ SERIĘ</button>';
-
-  html += '<div class="fz-nav">' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-prev"' + (idx === 0 ? ' disabled' : '') + '>Poprzednie</button>' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-done">' + (ex.done ? 'Wznowić' : 'Zakończ') + '</button>' +
-    '<button class="btn secondary fz-nav-btn" data-act="fz-next"' + (idx === exs.length - 1 ? ' disabled' : '') + '>Następne</button>' +
-    '</div></div>';
-
-  html += '<div class="card fz-rest">' +
-    '<div class="fz-rest-head">' + icon('clock') + '<span>Przerwa</span>' +
-    '<span class="rt-time' + (running ? ' running' : '') + '" id="rt-time">' + restTimeText() + '</span></div>' +
-    '<div class="chips">' + [60, 90, 120, 180].map(s =>
-      '<button class="chip rt-chip' + (restTimer.total === s ? ' active' : '') + '" data-rt="' + s + '">' + s + 's</button>').join('') + '</div>' +
-    '<div class="fz-rest-actions">' +
-    '<button class="btn secondary small" id="rt-start">' + (restTimer.timer ? 'Restart' : 'Start') + '</button>' +
-    '<button class="btn secondary small" id="rt-stop">Stop</button></div></div>';
-
-  return html;
-}
-
-function focusLogSet(exIdx) {
-  const ex = state.current.exercises[exIdx];
-  if (!ex) return;
-  const wEl = document.getElementById('fz-w');
-  const rEl = document.getElementById('fz-r');
-  const w = wEl ? wEl.value : '';
-  const r = rEl ? rEl.value : '';
-  if (w === '' && r === '') { toast('Wpisz ciężar lub powtórzenia'); return; }
-  const last = lastResultFor(ex.name);
-  const bestW = last ? last.sets.reduce((m, s) => Math.max(m, num(s.w)), 0) : 0;
-  const isPR = num(w) > 0 && num(w) > bestW;
-  const sets = ex.sets || (ex.sets = []);
-  const empty = sets.find(s => s.w === '' && s.r === '');
-  if (empty) { empty.w = w; empty.r = r; } else { sets.push({ w: w, r: r }); }
-  if (wEl) wEl.value = '';
-  if (rEl) rEl.value = '';
-  if (getTrainingPrefs().restAuto) startRest(restTimer.total);
-  if (navigator.vibrate) navigator.vibrate(isPR ? [40, 30, 40] : [20]);
-  renderFocus();
-  const flash = document.getElementById('fz-flash');
-  if (flash) {
-    flash.textContent = isPR ? 'NOWY PR — ' + fmtNum(num(w)) + ' kg!' : '✓ Zaliczone';
-    flash.classList.remove('show');
-    void flash.offsetWidth;
-    flash.classList.add('show');
-  }
-  if (isPR) toast('Nowy rekord: ' + fmtNum(num(w)) + ' kg (' + ex.name + ')');
 }
 
 function renderRunSplits() {
@@ -2565,8 +2318,24 @@ function renderHealth() {
 
   html += '<div id="goal-box"></div>';
 
+  html += '<div class="card"><h3>' + (state.editHealthId ? 'Edytuj wpis' : 'Nowy wpis') + '</h3>';
+  html += '<div><label class="field-label">Data</label><input id="h-date" type="date" value="' + todayStr() + '"></div>';
+  const fields = [
+    { id: 'h-weight', lbl: 'Waga (kg)' },
+    { id: 'h-fatpct', lbl: 'Body fat (%)' },
+    { id: 'h-muscle', lbl: 'Mięśnie (kg)' },
+    { id: 'h-fat', lbl: 'Tłuszcz (kg)' }
+  ];
+  html += '<div class="form-row"><div><label class="field-label">' + fields[0].lbl + '</label><input id="' + fields[0].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
+    '<div><label class="field-label">' + fields[1].lbl + '</label><input id="' + fields[1].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
+  html += '<div class="form-row"><div><label class="field-label">' + fields[2].lbl + '</label><input id="' + fields[2].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
+    '<div><label class="field-label">' + fields[3].lbl + '</label><input id="' + fields[3].id + '" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
+  html += '<div class="form-actions">';
+  if (state.editHealthId) html += '<button class="btn secondary" id="btn-cancel-health">Anuluj</button>';
+  html += '<button class="btn primary" id="btn-save-health">' + (state.editHealthId ? 'Zapisz zmiany' : 'Dodaj wpis') + '</button></div></div>';
+
   html += '<div class="card"><h3>Historia pomiarów</h3>';
-  if (!sorted.length) html += '<div class="chart-empty">Brak pomiarów. Dodaj pierwszy przyciskiem +.</div>';
+  if (!sorted.length) html += '<div class="chart-empty">Brak pomiarów. Dodaj pierwszy powyżej.</div>';
   else {
     html += '<div class="health-list">' + sorted.map(h => {
       const open = !!state.healthOpen[h.id];
@@ -2593,29 +2362,7 @@ function renderHealth() {
 
   renderWeightGoal();
   renderPhotos();
-}
 
-function healthFormHtml() {
-  const editing = state.editHealthId ? data.health.find(x => x.id === state.editHealthId) : null;
-  let html = '<div id="health-sheet"><div class="card"><h3>' + (editing ? 'Edytuj pomiar' : 'Nowy pomiar') + '</h3>';
-  html += '<div><label class="field-label">Data</label><input id="h-date" type="date" value="' + todayStr() + '"></div>';
-  html += '<div class="form-row"><div><label class="field-label">Waga (kg)</label><input id="h-weight" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
-    '<div><label class="field-label">Body fat (%)</label><input id="h-fatpct" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
-  html += '<div class="form-row"><div><label class="field-label">Mięśnie (kg)</label><input id="h-muscle" type="number" step="any" inputmode="decimal" placeholder="0,0"></div>' +
-    '<div><label class="field-label">Tłuszcz (kg)</label><input id="h-fat" type="number" step="any" inputmode="decimal" placeholder="0,0"></div></div>';
-  html += '<div class="form-actions">' +
-    '<button class="btn secondary" id="btn-cancel-health">Anuluj</button>' +
-    '<button class="btn primary" id="btn-save-health">' + (editing ? 'Zapisz zmiany' : 'Dodaj wpis') + '</button></div></div></div>';
-  return html;
-}
-
-function openHealthSheet(id) {
-  state.editHealthId = id || null;
-  const title = document.getElementById('sheet-title');
-  const body = document.getElementById('sheet-body');
-  if (title) title.textContent = state.editHealthId ? 'Edytuj pomiar' : 'Nowy pomiar';
-  if (body) body.innerHTML = healthFormHtml();
-  openModal('modal-sheet');
   if (state.editHealthId) {
     const h = data.health.find(x => x.id === state.editHealthId);
     if (h) fillHealthForm(h);
@@ -2650,7 +2397,6 @@ function saveHealth() {
   }
   save();
   toast('Zapisano pomiary');
-  closeModal('modal-sheet');
   renderHealth();
   renderCalendar();
 }
@@ -2819,10 +2565,13 @@ function racesSorted() {
   return data.races.slice().sort((a, b) => a.date < b.date ? -1 : 1);
 }
 
-function raceFormHtml() {
+function renderRaces() {
+  const wrap = document.getElementById('races-form');
+  if (!wrap) return;
   const editing = state.editRaceId ? data.races.find(r => r.id === state.editRaceId) : null;
   const today = todayStr();
-  let html = '<div id="races-sheet"><div class="card"><h3>' + (editing ? 'Edytuj zawody' : 'Dodaj zawody') + '</h3>';
+
+  let html = '<div class="card"><h3>' + (editing ? 'Edytuj zawody' : 'Dodaj zawody') + '</h3>';
   if (editing) html += '<div class="race-editing">Edycja: ' + esc(editing.name) + ' <button class="mini-btn" id="race-cancel-edit">Anuluj</button></div>';
   html += '<div><label class="field-label">Nazwa zawodów</label><input id="race-name" type="text" placeholder="np. Półmaraton Poznań" value="' + esc(editing ? editing.name : '') + '"></div>';
   html += '<div class="form-row"><div><label class="field-label">Data</label><input id="race-date" type="date" value="' + (editing ? editing.date : today) + '"></div>' +
@@ -2838,27 +2587,11 @@ function raceFormHtml() {
   html += '<div class="form-row"><div><label class="field-label">Cel (czas)</label><input id="race-goal" type="text" inputmode="decimal" placeholder="np. 1:45:00" value="' + esc(editing ? editing.goal || '' : '') + '"></div>' +
     '<div><label class="field-label">Wynik (po starcie)</label><input id="race-result" type="text" inputmode="decimal" placeholder="np. 1:42:30" value="' + esc(editing ? editing.result || '' : '') + '"></div></div>';
   html += '<div><label class="field-label">Notatki</label><input id="race-notes" type="text" placeholder="np. pakiet startowy, strój" value="' + esc(editing ? editing.notes || '' : '') + '"></div>';
-  html += '<div class="form-actions"><button class="btn primary" id="btn-save-race">' + (editing ? 'Zapisz zmiany' : 'Dodaj zawody') + '</button></div></div></div>';
-  return html;
-}
-
-function openRaceSheet(id) {
-  state.editRaceId = id || null;
-  const title = document.getElementById('sheet-title');
-  const body = document.getElementById('sheet-body');
-  if (title) title.textContent = state.editRaceId ? 'Edytuj zawody' : 'Dodaj zawody';
-  if (body) body.innerHTML = raceFormHtml();
-  openModal('modal-sheet');
-}
-
-function renderRaces() {
-  const wrap = document.getElementById('races-form');
-  if (!wrap) return;
-  const today = todayStr();
+  html += '<div class="form-actions"><button class="btn primary" id="btn-save-race">' + (editing ? 'Zapisz zmiany' : 'Dodaj zawody') + '</button></div></div>';
 
   const sorted = racesSorted();
-  let html = '<div class="card"><h3>Lista startów</h3>';
-  if (!sorted.length) html += '<div class="chart-empty">Brak zawodów. Dodaj pierwsze przyciskiem +.</div>';
+  html += '<div class="card"><h3>Lista startów</h3>';
+  if (!sorted.length) html += '<div class="chart-empty">Brak zawodów. Dodaj pierwszy powyżej.</div>';
   else {
     html += '<div class="race-list">' + sorted.map(r => {
       const st = RACE_STATUSES.find(s => s.id === r.status) || RACE_STATUSES[0];
@@ -2895,7 +2628,6 @@ function renderRaces() {
 
 function resetRaceForm() {
   state.editRaceId = null;
-  closeModal('modal-sheet');
   renderRaces();
 }
 
@@ -2924,7 +2656,6 @@ function saveRace() {
   }
   state.editRaceId = null;
   save();
-  closeModal('modal-sheet');
   renderRaces();
   if (state.tab === 'kalendarz') renderCalendar();
 }
@@ -2988,45 +2719,17 @@ function renderFeedback() {
   if (!el) return;
   const arr = getFeedback();
   el.innerHTML = arr.length
-    ? arr.map((it, i) => {
-        const t = typeof it === 'object' && it ? it.t : it;
-        const ph = typeof it === 'object' && it ? it.photo : null;
-        return '<div class="fb-item"><span>' + esc(t) +
-          (ph ? ' <span class="fb-has-photo">📷</span>' : '') +
-          '</span><button class="mini-btn" data-fb-del="' + i + '">Usuń</button></div>';
-      }).join('')
+    ? arr.map((t, i) => '<div class="fb-item"><span>' + esc(t) + '</span><button class="mini-btn" data-fb-del="' + i + '">Usuń</button></div>').join('')
     : '<p class="field-hint">Brak uwag — dodaj pierwszą powyżej.</p>';
-}
-let fbPhoto = null;
-function feedbackPhotoPreview() {
-  const box = document.getElementById('feedback-photo-preview');
-  if (!box) return;
-  box.classList.toggle('hidden', !fbPhoto);
-  box.innerHTML = fbPhoto
-    ? '<div class="fb-photo-wrap"><img src="' + fbPhoto + '" alt="Załączone zdjęcie"><button class="mini-btn" id="feedback-photo-clear">Usuń</button></div>'
-    : '';
-}
-function pickFeedbackPhoto(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    fbPhoto = reader.result;
-    feedbackPhotoPreview();
-  };
-  reader.readAsDataURL(file);
-}
-function clearFeedbackPhoto() {
-  fbPhoto = null;
-  feedbackPhotoPreview();
 }
 function addFeedback() {
   const inp = document.getElementById('feedback-input');
   const t = inp.value.trim();
   if (!t) { toast('Wpisz treść uwagi'); return; }
   const arr = getFeedback();
-  arr.push(fbPhoto ? { t: t, photo: fbPhoto } : t);
+  arr.push(t);
   saveFeedback(arr);
   inp.value = '';
-  clearFeedbackPhoto();
   renderFeedback();
   toast('Uwaga dodana');
 }
@@ -3039,23 +2742,23 @@ function delFeedback(i) {
 function copyFeedback() {
   const arr = getFeedback();
   if (!arr.length) { toast('Brak uwag do skopiowania'); return; }
-  copyText(arr.map((it, i) => (i + 1) + '. ' + (typeof it === 'object' ? it.t + ' (ze zdjęciem)' : it)).join('\n'), () => toast('Uwagi skopiowane do schowka'), () => toast('Nie udało się skopiować'));
+  copyText(arr.map((t, i) => (i + 1) + '. ' + t).join('\n'), () => toast('Uwagi skopiowane do schowka'), () => toast('Nie udało się skopiować'));
 }
 function sendFeedback() {
   const arr = getFeedback();
   if (!arr.length) { toast('Dodaj najpierw uwagę'); return; }
   const profile = activeProfile();
   const who = profile && profile.name ? profile.name : 'bez profilu';
-  const photo = arr.map(it => typeof it === 'object' ? it.photo : null).find(Boolean) || fbPhoto;
-  const body = arr.map((it, i) => (i + 1) + '. ' + (typeof it === 'object' ? it.t : it)).join('\n') +
+  const body = arr.map((t, i) => (i + 1) + '. ' + t).join('\n') +
     '\n\n— wysłano z BetterNM ' + APP_VERSION + ' (profil: ' + who + ')';
   toast('Wysyłam do autora…');
-  const payload = { title: 'Uwagi od: ' + who, body: body };
-  if (photo) payload.photo = photo;
   fetch(FEEDBACK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      title: 'Uwagi od: ' + who,
+      body: body
+    })
   })
     .then(res => {
       if (res.ok) toast('Wysłano do autora — dzięki!');
@@ -3416,16 +3119,6 @@ setInterval(() => { if (getTheme() === 'auto') applyTheme('auto'); }, 60000);
 
 function bindEvents() {
   document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  const fab = document.getElementById('fab');
-  if (fab) fab.addEventListener('click', fabAction);
-
-  const dashTab = document.getElementById('tab-dzis');
-  if (dashTab) {
-    dashTab.addEventListener('click', e => {
-      const b = e.target.closest('[data-dash-start]');
-      if (b) { showTab(b.dataset.dashStart); }
-    });
-  }
 
   const profileScreen = document.getElementById('profile-screen');
   if (profileScreen) {
@@ -3496,7 +3189,6 @@ function bindEvents() {
     state.editHealthId = null;
     closeModal('modal-day');
     showTab('zdrowie');
-    openHealthSheet();
     const el = document.getElementById('h-date');
     if (el) el.value = state.dayDate || todayStr();
   });
@@ -3601,24 +3293,6 @@ function bindEvents() {
       if (a === 'del-ex') delEx(ex);
       if (a === 'toggle-done') toggleExDone(ex);
       if (a === 'clear-plan') { clearPlanFromWorkout(); renderTraining(); return; }
-      if (a === 'fz-enter') { state.focus.on = true; state.focus.idx = 0; renderTraining(); return; }
-      if (a === 'fz-exit') { state.focus.on = false; renderTraining(); return; }
-      if (a === 'fz-clock') { toggleWorkoutClock(); return; }
-      if (a === 'fz-set') { focusLogSet(state.focus.idx); return; }
-      if (a === 'fz-next') { state.focus.idx = Math.min(state.focus.idx + 1, state.current.exercises.length - 1); renderTraining(); return; }
-      if (a === 'fz-prev') { state.focus.idx = Math.max(state.focus.idx - 1, 0); renderTraining(); return; }
-      if (a === 'fz-done') {
-        const cur = state.current.exercises[state.focus.idx];
-        if (cur) cur.done = !cur.done;
-        if (state.focus.idx < state.current.exercises.length - 1) {
-          state.focus.idx++;
-          renderTraining();
-        } else {
-          state.focus.on = false;
-          renderTraining();
-        }
-        return;
-      }
       return;
     }
     const exToggle = e.target.closest('[data-ex-toggle]');
@@ -3744,16 +3418,15 @@ function bindEvents() {
     });
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#health-form, #health-sheet')) return;
+  document.getElementById('health-form').addEventListener('click', e => {
     if (e.target.id === 'btn-save-health') { saveHealth(); return; }
-    if (e.target.id === 'btn-cancel-health') { state.editHealthId = null; closeModal('modal-sheet'); renderHealth(); return; }
+    if (e.target.id === 'btn-cancel-health') { state.editHealthId = null; renderHealth(); return; }
     if (e.target.id === 'btn-save-goal') { saveGoalWeight(); return; }
     const ed = e.target.closest('[data-edit]');
     const dl = e.target.closest('[data-del]');
     if (ed) {
       const [kind, id] = ed.dataset.edit.split(':');
-      if (kind === 'health') { openHealthSheet(id); return; }
+      if (kind === 'health') { state.editHealthId = id; renderHealth(); }
     }
     if (dl) {
       const [kind, id] = dl.dataset.del.split(':');
@@ -3792,17 +3465,19 @@ function bindEvents() {
     });
   }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('#races-form, #races-sheet')) return;
-    if (e.target.id === 'btn-save-race') { saveRace(); return; }
-    if (e.target.id === 'race-cancel-edit') { resetRaceForm(); return; }
-    const ds = e.target.closest('[data-dist]');
-    if (ds) { const el = document.getElementById('race-dist'); if (el) el.value = ds.dataset.dist; return; }
-    const ed = e.target.closest('[data-edit-race]');
-    if (ed) { openRaceSheet(ed.dataset.editRace); return; }
-    const dl = e.target.closest('[data-del-race]');
-    if (dl) deleteRace(dl.dataset.delRace);
-  });
+  const racesForm = document.getElementById('races-form');
+  if (racesForm) {
+    racesForm.addEventListener('click', e => {
+      if (e.target.id === 'btn-save-race') { saveRace(); return; }
+      if (e.target.id === 'race-cancel-edit') { resetRaceForm(); return; }
+      const ds = e.target.closest('[data-dist]');
+      if (ds) { document.getElementById('race-dist').value = ds.dataset.dist; return; }
+      const ed = e.target.closest('[data-edit-race]');
+      if (ed) { state.editRaceId = ed.dataset.editRace; renderRaces(); return; }
+      const dl = e.target.closest('[data-del-race]');
+      if (dl) deleteRace(dl.dataset.delRace);
+    });
+  }
 
   document.getElementById('btn-settings').addEventListener('click', () => {
     fillReminderSettings();
@@ -3851,27 +3526,6 @@ function bindEvents() {
     const b = e.target.closest('[data-fb-del]');
     if (b) delFeedback(Number(b.dataset.fbDel));
   });
-  const fbPhotoBtn = document.getElementById('feedback-photo-btn');
-  if (fbPhotoBtn) {
-    fbPhotoBtn.addEventListener('click', () => {
-      const pf = document.getElementById('feedback-photo-file');
-      if (pf) pf.click();
-    });
-  }
-  const fbPhotoFile = document.getElementById('feedback-photo-file');
-  if (fbPhotoFile) {
-    fbPhotoFile.addEventListener('change', () => {
-      const f = fbPhotoFile.files && fbPhotoFile.files[0];
-      if (f) pickFeedbackPhoto(f);
-      fbPhotoFile.value = '';
-    });
-  }
-  const fbPreview = document.getElementById('feedback-photo-preview');
-  if (fbPreview) {
-    fbPreview.addEventListener('click', e => {
-      if (e.target.closest('#feedback-photo-clear')) clearFeedbackPhoto();
-    });
-  }
   document.getElementById('settings-switch-profile').addEventListener('click', () => {
     closeModal('modal-settings');
     openProfileScreen();
@@ -4009,7 +3663,7 @@ function init() {
   fillReminderSettings();
   renderPlans();
   renderHealth();
-  showTab('dzis');
+  showTab('kalendarz');
   openProfileScreen();
   if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});

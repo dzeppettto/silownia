@@ -12,20 +12,22 @@ const DATA_PREFIX = 'betternm_data_v1_';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.19';
+const APP_VERSION = 'beta 0.15';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.19',
+  version: 'beta 0.15',
   changes: [
-    'Nowa zakładka „Dzisiaj”: powitanie, ostatnia waga, treningi/dystans/objętość z ostatnich 7 dni z porównaniem do poprzedniego tygodnia, pasek aktywności, dzisiejszy trening i następne zawody',
-    'Tryb skupienia w treningu siłowym — jedno ćwiczenie na raz, pasek postępu, propozycja ciężaru, wykrywanie rekordu (PR) i stoper przerwy',
-    'Przycisk „+” nad paskiem nawigacji — szybkie dodawanie zależnie od zakładki: wpisu dnia, rozpiski, ćwiczenia, pomiaru zdrowia lub zawodów',
-    'Formularze zdrowia i zawodów jako arkusz wysuwany z dołu (bottom sheet) — historia pomiarów i lista startów zostały w zakładkach',
-    'Okna modalne mają animację wysuwania z dołu i uchwyt',
-    'Odznaki są zwijane i przeniesione do zakładki Kalendarz',
-    'Edycja rozpiski: możesz dodać opis/plan (np. „3 serie po 10 powtórzeń”)',
-    'Do uwagi (flaga) można dołączyć zdjęcie',
-    'Nagłówek pokazuje imię aktywnego profilu'
+    'Ćwiczenia w treningu można zwijać/rozwijać (nagłówek) i oznaczać jako „zrobione” — to trafia też do zapisu',
+    'Smart podpowiedź ciężaru: liczy 1RM (wzór Epleya) i proponuje progres ~2,5% po domkniętym treningu',
+    'Historia pomiarów w Zdrowiu jako lista rozwijana (dotknij datę, by zobaczyć szczegóły)',
+    'Statystyki miesiąca pokazują najczęstsze mięśnie (na podstawie zaznaczonych w treningu)',
+    'Nowość w Ustawieniach → Trening: auto-start stopera odpoczynku po wpisaniu serii (opcja)',
+    'Nowość w Ustawieniach → Trening: auto-wpisanie sugerowanego ciężaru do serii z rozpiski (opcja)',
+    'Przypomnienie o zawodach na dzień przed startem',
+    'Motyw „Auto” w Ustawieniach → Wygląd — jasny w dzień, ciemny w nocy',
+    'Import ze Stravy: wgraj plik z eksportu (activities.csv, .gpx lub .tcx) — biegi i jazdy trafią do kalendarza',
+    'Przycisk zgłaszania uwag (flaga) obok ustawień w nagłówku',
+    'Poprawka: kafelek kolorów akcentu w równych odstępach'
   ]
 };
 
