@@ -1,9 +1,9 @@
-const CACHE = 'betternm-v26';
+const CACHE = 'betternm-v27';
 const ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
+  './style.css?v=27',
+  './app.js?v=27',
   './manifest.webmanifest',
   './logo.png',
   './icons/icon-192.png',
