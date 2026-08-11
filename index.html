@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
   <div class="jamnik-bg" aria-hidden="true">
@@ -98,7 +98,9 @@
     <section id="tab-dzis" class="tab active">
       <h2 class="tab-title">Dzisiaj</h2>
       <div id="dash-hero"></div>
+      <div id="dash-backup" class="hidden"></div>
       <div id="dash-stats"></div>
+      <div id="dash-vol"></div>
       <div id="dash-today"></div>
       <div id="dash-race"></div>
     </section>
@@ -565,7 +567,8 @@
   </div>
 
   <div id="toast" class="hidden"></div>
+  <div id="undo-toast" class="hidden"><span id="undo-msg"></span><button id="undo-btn">Cofnij</button></div>
 
-  <script src="app.js?v=31"></script>
+  <script src="app.js?v=32"></script>
 </body>
 </html>

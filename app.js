@@ -530,7 +530,10 @@ const state = {
   tab: 'dzis',
   calYear: 0,
   calMonth: 0,
+  volRange: 30,
   dayDate: null,
+  exSearch: '',
+  exMuscle: '',
   current: {
     mode: 'new', category: 'silownia', planId: null, tags: [], date: todayStr(), name: '', kcal: '', notes: '',
     exercises: [], runType: 'easy-run', duration: '', distance: '', speed: '', hr: '', zone: '', splits: {}
@@ -640,6 +643,51 @@ function toast(msg) {
   t.classList.remove('hidden');
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.add('hidden'), 2200);
+}
+
+/* ==================== COFNIJ (UNDO) ==================== */
+
+const undoState = { kind: null, item: null, timer: null };
+
+function showUndo(label, kind, item) {
+  clearTimeout(undoState.timer);
+  undoState.kind = kind;
+  undoState.item = item;
+  const msg = document.getElementById('undo-msg');
+  if (msg) msg.textContent = label;
+  const t = document.getElementById('undo-toast');
+  if (t) t.classList.remove('hidden');
+  undoState.timer = setTimeout(hideUndo, 10000);
+}
+
+function hideUndo() {
+  clearTimeout(undoState.timer);
+  undoState.kind = null;
+  undoState.item = null;
+  const t = document.getElementById('undo-toast');
+  if (t) t.classList.add('hidden');
+}
+
+function undoLastDelete() {
+  const kind = undoState.kind;
+  const item = undoState.item;
+  hideUndo();
+  if (!item) return;
+  if (kind === 'log') data.logs.push(item);
+  else if (kind === 'run') data.runs.push(item);
+  else if (kind === 'health') data.health.push(item);
+  else if (kind === 'race') data.races.push(item);
+  else if (kind === 'plan') data.plans.push(item);
+  save();
+  toast('Przywrócono');
+  renderCalendar();
+  if (kind === 'health') renderHealth();
+  if (kind === 'race') renderRaces();
+  if (kind === 'plan') renderPlans();
+  if (state.dayDate) {
+    const modal = document.getElementById('modal-day');
+    if (!modal.classList.contains('hidden')) refreshDayModal();
+  }
 }
 
 /* ==================== NAVIGATION ==================== */
@@ -985,6 +1033,25 @@ function rangeActivity(offsetFrom, offsetTo) {
   return { days: days.size, logs: logs, runs: runs, km: km, vol: vol };
 }
 
+function volumeTrend(rangeDays) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - rangeDays);
+  const c0 = dateStr(cutoff.getFullYear(), cutoff.getMonth(), cutoff.getDate());
+  const map = new Map();
+  data.logs.forEach(l => {
+    if (l.date < c0) return;
+    const p = l.date.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    const dow = d.getDay() === 0 ? 7 : d.getDay();
+    d.setDate(d.getDate() - (dow - 1));
+    const wk = dateStr(d.getFullYear(), d.getMonth(), d.getDate());
+    let vol = 0;
+    l.exercises.forEach(ex => ex.sets.forEach(st => vol += setVolume(st, ex.name)));
+    map.set(wk, (map.get(wk) || 0) + vol);
+  });
+  return map;
+}
+
 function dashTrend(cur, prev) {
   if (!prev) return null;
   if (cur === prev) return 0;
@@ -1056,6 +1123,20 @@ function renderDashboard() {
     '<div class="wk-bars">' + weekBars + '</div>' +
     '<div class="wk-labels">' + dayLabels.join('') + '</div></div>';
   document.getElementById('dash-stats').innerHTML = html;
+
+  const vr = state.volRange === 90 ? 90 : 30;
+  const volPoints = Array.from(volumeTrend(vr).entries())
+    .sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .map(([wk, v]) => ({ label: shortDate(wk), y: Math.round(v) }));
+  let volHtml = '<h2 class="sec-label">Trend objętości</h2>' +
+    '<div class="card"><div class="vol-head"><span class="wk-title">Objętość tygodniowo (kg)</span>' +
+    '<div class="chips vol-chips">' +
+    '<button class="chip' + (vr === 30 ? ' active' : '') + '" data-vol-range="30">30 dni</button>' +
+    '<button class="chip' + (vr === 90 ? ' active' : '') + '" data-vol-range="90">90 dni</button>' +
+    '</div></div><div id="chart-vol"></div></div>';
+  document.getElementById('dash-vol').innerHTML = volHtml;
+  renderChart('chart-vol', volPoints, ACCENTS[getAccent()].color);
+  renderBackupReminder();
 
   const todLogs = data.logs.filter(l => l.date === today);
   const todRuns = data.runs.filter(r => r.date === today);
@@ -1437,12 +1518,14 @@ function openDay(ds) {
 
 function deleteEntry(kind, id) {
   if (!confirm('Na pewno usunąć ten wpis?')) return;
-  if (kind === 'log') data.logs = data.logs.filter(l => l.id !== id);
-  if (kind === 'run') data.runs = data.runs.filter(r => r.id !== id);
-  if (kind === 'health') data.health = data.health.filter(h => h.id !== id);
-  if (kind === 'race') data.races = data.races.filter(r => r.id !== id);
+  let item = null;
+  if (kind === 'log') { item = data.logs.find(l => l.id === id); data.logs = data.logs.filter(l => l.id !== id); }
+  if (kind === 'run') { item = data.runs.find(r => r.id === id); data.runs = data.runs.filter(r => r.id !== id); }
+  if (kind === 'health') { item = data.health.find(h => h.id === id); data.health = data.health.filter(h => h.id !== id); }
+  if (kind === 'race') { item = data.races.find(r => r.id === id); data.races = data.races.filter(r => r.id !== id); }
   save();
   toast('Usunięto');
+  if (item) showUndo('Usunięto wpis', kind, item);
   renderCalendar();
   if (kind === 'health') renderHealth();
   if (kind === 'race') renderRaces();
@@ -1572,12 +1655,24 @@ function renderExerciseList() {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(n);
   });
+  const q = (state.exSearch || '').toLowerCase().trim();
+  const mf = state.exMuscle || '';
   let html = '<div class="card"><h3>Lista ćwiczeń</h3>' +
-    '<p class="field-hint">Kliknij ćwiczenie, aby dodać je do treningu. Grupowanie po mięśniu głównym; drugorzędne w nawiasie.</p>';
+    '<input id="ex-search" class="ex-search" type="search" placeholder="Szukaj ćwiczenia…" value="' + esc(state.exSearch || '') + '">' +
+    '<div class="chips ex-muscle-filters">' +
+    '<button class="chip' + (!mf ? ' active' : '') + '" data-ex-muscle="">Wszystkie</button>' +
+    MUSCLE_TAGS.filter(t => groups.has(t.key)).map(t =>
+      '<button class="chip' + (mf === t.key ? ' active' : '') + '" data-ex-muscle="' + t.key + '">' + esc(t.label) + '</button>'
+    ).join('') +
+    '</div>';
   const orderedKeys = MUSCLE_TAGS.map(t => t.key).filter(k => groups.has(k));
   [...groups.keys()].forEach(k => { if (!orderedKeys.includes(k)) orderedKeys.push(k); });
+  let shown = 0;
   orderedKeys.forEach(k => {
-    const items = groups.get(k);
+    if (mf && mf !== k) return;
+    const items = groups.get(k).filter(n => !q || n.toLowerCase().includes(q));
+    if (!items.length) return;
+    shown += items.length;
     const label = k === 'inne' ? 'Inne' : muscleTagLabel(k);
     html += '<h4 class="ex-part">' + esc(label) + '</h4>' +
       '<ol class="ex-list ex-list-click">' + items.map(n => {
@@ -1588,6 +1683,7 @@ function renderExerciseList() {
           '<span class="ex-add-chip">+ Dodaj</span></button></li>';
       }).join('') + '</ol>';
   });
+  if (!shown) html += '<div class="chart-empty">Brak ćwiczeń pasujących do filtra.</div>';
   html += '</div>';
   box.innerHTML = html;
 }
@@ -1681,6 +1777,7 @@ function deletePlan(planId) {
   closeModal('modal-plan-edit');
   renderPlans();
   toast('Rozpiska usunięta');
+  showUndo('Usunięto rozpiskę „' + p.name + '"', 'plan', p);
 }
 
 function suggestNext(name, sets) {
@@ -1790,6 +1887,10 @@ function lastResultFor(name) {
   return best;
 }
 
+function prevVal(pv, key) {
+  return pv && pv[key] !== undefined && String(pv[key]).trim() !== '' ? String(pv[key]) : '';
+}
+
 /* ==================== TRENING ==================== */
 
 function resetCurrent() {
@@ -1879,22 +1980,27 @@ function renderTraining() {
           (sug ? '<div class="suggest">' + sug.text + '</div>' : '') + '</div>';
       }
       ex.sets.forEach((s, j) => {
+        const pv = last ? (last.sets[j] || last.sets[last.sets.length - 1] || null) : null;
+        const wPh = prevVal(pv, 'w') || (typ === EX_TYPE.BODYWEIGHT_REPS ? 'dod. kg' : 'kg');
+        const rPh = prevVal(pv, 'r') || 'powt.';
+        const tPh = prevVal(pv, 't') || (typ === EX_TYPE.TIME ? 'czas (np. 1:32)' : 'czas');
+        const dPh = prevVal(pv, 'd') || 'metry';
         html += '<div class="set-row"><span class="set-num">' + (j + 1) + '</span>';
         if (typ === EX_TYPE.TIME) {
           const tval = (s.t !== undefined && String(s.t).trim() !== '') ? s.t : (s.w || '');
-          html += '<input class="inp-t" type="text" inputmode="decimal" placeholder="czas (np. 1:32)" data-k="t" data-ex="' + i + '" data-se="' + j + '" value="' + esc(tval) + '">';
+          html += '<input class="inp-t" type="text" inputmode="decimal" placeholder="' + esc(tPh) + '" data-k="t" data-ex="' + i + '" data-se="' + j + '" value="' + esc(tval) + '">';
         } else {
           if (typ === EX_TYPE.WEIGHT_REPS || typ === EX_TYPE.BODYWEIGHT_REPS || typ === EX_TYPE.WEIGHT_TIME || typ === EX_TYPE.WEIGHT_DISTANCE) {
-            html += '<input class="inp-w" type="number" step="any" inputmode="decimal" placeholder="' + (typ === EX_TYPE.BODYWEIGHT_REPS ? 'dod. kg' : 'kg') + '" data-k="w" data-ex="' + i + '" data-se="' + j + '" value="' + (s.w !== undefined && s.w !== '' ? s.w : '') + '">';
+            html += '<input class="inp-w" type="number" step="any" inputmode="decimal" placeholder="' + esc(wPh) + '" data-k="w" data-ex="' + i + '" data-se="' + j + '" value="' + (s.w !== undefined && s.w !== '' ? s.w : '') + '">';
           }
           if (typ === EX_TYPE.WEIGHT_REPS || typ === EX_TYPE.BODYWEIGHT_REPS || typ === EX_TYPE.REPS || typ === EX_TYPE.TIME_REPS) {
-            html += '<input class="inp-r" type="number" step="any" inputmode="numeric" placeholder="' + (typ === EX_TYPE.TIME_REPS ? 'powt.' : 'powt.') + '" data-k="r" data-ex="' + i + '" data-se="' + j + '" value="' + (s.r !== undefined && s.r !== '' ? s.r : '') + '">';
+            html += '<input class="inp-r" type="number" step="any" inputmode="numeric" placeholder="' + esc(rPh) + '" data-k="r" data-ex="' + i + '" data-se="' + j + '" value="' + (s.r !== undefined && s.r !== '' ? s.r : '') + '">';
           }
           if (typ === EX_TYPE.WEIGHT_TIME || typ === EX_TYPE.TIME_REPS || typ === EX_TYPE.DISTANCE_TIME) {
-            html += '<input class="inp-t" type="text" inputmode="decimal" placeholder="czas" data-k="t" data-ex="' + i + '" data-se="' + j + '" value="' + (s.t !== undefined && s.t !== '' ? s.t : '') + '">';
+            html += '<input class="inp-t" type="text" inputmode="decimal" placeholder="' + esc(tPh) + '" data-k="t" data-ex="' + i + '" data-se="' + j + '" value="' + (s.t !== undefined && s.t !== '' ? s.t : '') + '">';
           }
           if (typ === EX_TYPE.DISTANCE || typ === EX_TYPE.DISTANCE_TIME || typ === EX_TYPE.WEIGHT_DISTANCE) {
-            html += '<input class="inp-d" type="number" step="any" inputmode="decimal" placeholder="metry" data-k="d" data-ex="' + i + '" data-se="' + j + '" value="' + (s.d !== undefined && s.d !== '' ? s.d : '') + '">';
+            html += '<input class="inp-d" type="number" step="any" inputmode="decimal" placeholder="' + esc(dPh) + '" data-k="d" data-ex="' + i + '" data-se="' + j + '" value="' + (s.d !== undefined && s.d !== '' ? s.d : '') + '">';
           }
         }
         html += '<button class="icon-btn" data-act="del-set" data-ex="' + i + '" data-se="' + j + '">✕</button></div>';
@@ -3419,9 +3525,11 @@ function saveRace() {
 
 function deleteRace(id) {
   if (!confirm('Usunąć te zawody?')) return;
+  const item = data.races.find(r => r.id === id);
   data.races = data.races.filter(r => r.id !== id);
   save();
   toast('Usunięto');
+  if (item) showUndo('Usunięto zawody', 'race', item);
   renderRaces();
   if (state.tab === 'kalendarz') renderCalendar();
 }
@@ -3439,7 +3547,29 @@ function exportData() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
+  localStorage.setItem(backupDateKey(activeProfile().id), todayStr());
+  renderBackupReminder();
   toast('Kopia profilu pobrana');
+}
+
+function backupDateKey(id) { return DATA_PREFIX + id + '_bkdate'; }
+function backupRemindKey(id) { return DATA_PREFIX + id + '_bkrem'; }
+
+function renderBackupReminder() {
+  const box = document.getElementById('dash-backup');
+  if (!box) return;
+  const id = activeProfile().id;
+  const last = localStorage.getItem(backupDateKey(id));
+  if (!last) { box.classList.add('hidden'); return; }
+  const p = last.split('-').map(Number);
+  const days = Math.floor((Date.now() - new Date(p[0], p[1] - 1, p[2]).getTime()) / 86400000);
+  if (days <= 14 || localStorage.getItem(backupRemindKey(id)) === todayStr()) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="backup-banner">' +
+    '<span>Kopia zapasowa: <b>' + days + ' dni</b> temu. Zapisz dane, aby ich nie stracić.</span>' +
+    '<button class="btn primary small" id="dash-backup-btn">Pobierz kopię</button>' +
+    '<button class="btn-ghost" id="dash-backup-dismiss" aria-label="Ukryj">&#10005;</button>' +
+    '</div>';
 }
 
 function copyText(text, ok, fail) {
@@ -4014,6 +4144,8 @@ function bindEvents() {
   document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
   const fab = document.getElementById('fab');
   if (fab) fab.addEventListener('click', toggleFabMenu);
+  const undoBtn = document.getElementById('undo-btn');
+  if (undoBtn) undoBtn.addEventListener('click', undoLastDelete);
   document.addEventListener('click', e => {
     const item = e.target.closest('.fab-item');
     if (item) {
@@ -4028,6 +4160,16 @@ function bindEvents() {
     dashTab.addEventListener('click', e => {
       const b = e.target.closest('[data-dash-start]');
       if (b) { showTab(b.dataset.dashStart); }
+      const vr = e.target.closest('[data-vol-range]');
+      if (vr) {
+        state.volRange = Number(vr.dataset.volRange);
+        renderDashboard();
+      }
+      if (e.target.closest('#dash-backup-btn')) { exportData(); }
+      if (e.target.closest('#dash-backup-dismiss')) {
+        localStorage.setItem(backupRemindKey(activeProfile().id), todayStr());
+        renderBackupReminder();
+      }
     });
   }
 
@@ -4310,9 +4452,19 @@ function bindEvents() {
   });
 
   document.getElementById('ex-list-toggle').addEventListener('click', toggleExerciseList);
-  document.getElementById('exercise-list').addEventListener('click', e => {
+  const exBox = document.getElementById('exercise-list');
+  exBox.addEventListener('click', e => {
     const ex = e.target.closest('[data-ex-add]');
     if (ex) { addExerciseFromList(ex.dataset.exAdd, exPrimary(ex.dataset.exAdd) || undefined); return; }
+    const m = e.target.closest('[data-ex-muscle]');
+    if (m) { state.exMuscle = m.dataset.exMuscle; renderExerciseList(); }
+  });
+  exBox.addEventListener('input', e => {
+    if (e.target.id !== 'ex-search') return;
+    state.exSearch = e.target.value;
+    renderExerciseList();
+    const el = document.getElementById('ex-search');
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
   });
 
   const progressForm = document.getElementById('progress-form');
