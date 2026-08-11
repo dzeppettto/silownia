@@ -13,18 +13,18 @@ const MODULES_KEY = 'betternm_modules_v1';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 1.0';
+const APP_VERSION = 'beta 1.1';
 
 const RELEASE_NOTES = {
-  version: 'beta 1.0',
+  version: 'beta 1.1',
   changes: [
-    'System typów ćwiczeń: osobiste rekordy zależne od typu (ciężar / powtórzenia / czas / tempo / dystans) — sekcja Postęp rozumie każde ćwiczenie',
-    'Lista ćwiczeń w rozpisce grupowana po partiach mięśniowych z mięśniami drugorzędnymi',
-    'Focus mode (tryb treningu) dostosowany do typu ćwiczenia: podpowiada ciężar, powtórzenia lub czas; animacja „NOWY PR"',
-    'Ustawienia → Trening: przełączniki (switche) zamiast checkboxów',
-    'Przeprojektowana maskotka — jamniczek w 5 odsłonach (spokój, sukces, regeneracja, pustka, świętowanie PR)',
-    'Tło aplikacji z subtelnymi watermarkami zamiast gęstej siatki wzorów',
-    'Naprawa polskich znaków (diakrytyków) w całej aplikacji'
+    'Moduł Zawody (opcjonalny) — ukryty dla nowych użytkowników, włączany w Ustawieniach → Moduły: dodawanie startów, kalendarz i przypomnienia o zawodach',
+    'Historia „poprzednio": placeholdery w treningu podpowiadają ciężar / powtórzenia / czas z ostatniej sesji danego ćwiczenia',
+    'Cofnij po usunięciu — przywróć wpis treningu, bieg, pomiar, zawody lub rozpiskę w ciągu 10 sekund',
+    'Trend objętości na dashboardzie — wykres tygodniowy z przełącznikiem 30/90 dni',
+    'Lista ćwiczeń: wyszukiwarka tekstowa i filtry po partiach mięśniowych',
+    'Przypomnienie o kopii zapasowej — baner na dashboardzie, gdy ostatni eksport minął 14 dni',
+    'Szybkie akcje FAB: Pomiar zdrowia (Dziś) i Dodaj z rozpiski (Trening)'
   ]
 };
 
