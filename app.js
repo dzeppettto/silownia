@@ -9,13 +9,14 @@ const MASCOT_KEY = 'betternm_mascot_v1';
 const FEEDBACK_KEY = 'betternm_feedback_v1';
 const SEEN_KEY = 'betternm_seen_v1';
 const DATA_PREFIX = 'betternm_data_v1_';
+const MODULES_KEY = 'betternm_modules_v1';
 
 const FEEDBACK_URL = 'https://silownia-feedback.dzeppetto9.workers.dev/api/feedback';
 
-const APP_VERSION = 'beta 0.22';
+const APP_VERSION = 'beta 1.0';
 
 const RELEASE_NOTES = {
-  version: 'beta 0.22',
+  version: 'beta 1.0',
   changes: [
     'System typów ćwiczeń: osobiste rekordy zależne od typu (ciężar / powtórzenia / czas / tempo / dystans) — sekcja Postęp rozumie każde ćwiczenie',
     'Lista ćwiczeń w rozpisce grupowana po partiach mięśniowych z mięśniami drugorzędnymi',
@@ -168,6 +169,7 @@ const ICONS = {
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
   print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>'
 };
 
@@ -659,10 +661,16 @@ function showTab(name) {
 
 function fabMenuItems() {
   const t = state.tab;
-  if (t === 'dzis') return [
-    { label: 'Rozpocznij trening', icon: icon('dumbbell'), act: () => showTab('trening') },
-    { label: 'Dodaj zawody', icon: icon('flag'), act: () => { showTab('zawody'); openRaceSheet(); } }
-  ];
+  if (t === 'dzis') {
+    const items = [
+      { label: 'Rozpocznij trening', icon: icon('dumbbell'), act: () => showTab('trening') }
+    ];
+    if (getModulePrefs().showCompetitions) {
+      items.push({ label: 'Dodaj zawody', icon: icon('flag'), act: () => { showTab('zawody'); openRaceSheet(); } });
+    }
+    items.push({ label: 'Pomiar zdrowia', icon: icon('bell'), act: openHealthSheet });
+    return items;
+  }
   if (t === 'kalendarz') return [
     { label: 'Podgląd dnia', icon: icon('clock'), act: () => openDay(todayStr()) }
   ];
@@ -673,6 +681,10 @@ function fabMenuItems() {
     { label: 'Dodaj ćwiczenie', icon: icon('dumbbell'), act: () => {
       if (state.current.category !== 'silownia') { state.current.category = 'silownia'; state.focus.on = false; renderTraining(); }
       openAddExercise();
+    } },
+    { label: 'Dodaj z rozpiski', icon: icon('list'), act: () => {
+      const box = document.getElementById('exercise-list');
+      if (box && box.classList.contains('hidden')) toggleExerciseList();
     } }
   ];
   if (t === 'postep') return [
@@ -1053,6 +1065,9 @@ function renderDashboard() {
       (mascotOn() ? jamnikSVG(64, 'empty') : '<div class="dash-empty-ico">' + icon('dumbbell') + '</div>') +
       '<p>Jeszcze nic nie zanotowałeś dzisiaj.</p></div>' +
       '<button class="btn primary dash-start" data-dash-start="trening">' + icon('dumbbell') + ' Rozpocznij trening</button>';
+    if (!gymPlans().length) {
+      html += '<button class="btn secondary dash-start" data-dash-start="rozpiska">' + icon('list') + ' Dodaj rozpiskę</button>';
+    }
   } else {
     todLogs.forEach(l => {
       const kcal = num(l.kcal);
@@ -1073,23 +1088,25 @@ function renderDashboard() {
   html += '</div>';
   document.getElementById('dash-today').innerHTML = html;
 
-  const next = racesSorted().find(r => r.date >= today && r.status !== 'ukonczony');
   html = '';
-  if (next) {
-    const days = dateDiffDays(today, next.date);
-    html = '<div class="card dash-race">' +
-      '<div class="dash-race-count"><span class="dash-race-num">' + days + '</span>' +
-      '<span class="dash-race-days">' + (days === 1 ? 'dzień' : 'dni') + '</span></div>' +
-      '<div class="dash-race-info"><div class="dash-race-label">Następne zawody</div>' +
-      '<div class="dash-race-name">' + esc(next.name) + '</div>' +
-      '<div class="dash-race-meta">' + fmtLongDate(next.date) +
-      (next.dist ? ' · ' + fmtNum(next.dist) + ' km' : '') + (next.city ? ' · ' + esc(next.city) : '') + '</div></div></div>';
-  } else {
-    html = '<div class="card dash-race dash-race-none">' +
-      '<div class="dash-empty small">' +
-      (mascotOn() ? jamnikSVG(56, 'rest') : '<div class="dash-empty-ico">' + icon('flag') + '</div>') +
-      '<p>Brak zaplanowanych zawodów.</p></div>' +
-      '<button class="btn secondary dash-start" data-dash-start="zawody">' + icon('flag') + ' Dodaj zawody</button></div>';
+  if (getModulePrefs().showCompetitions) {
+    const next = racesSorted().find(r => r.date >= today && r.status !== 'ukonczony');
+    if (next) {
+      const days = dateDiffDays(today, next.date);
+      html = '<div class="card dash-race">' +
+        '<div class="dash-race-count"><span class="dash-race-num">' + days + '</span>' +
+        '<span class="dash-race-days">' + (days === 1 ? 'dzień' : 'dni') + '</span></div>' +
+        '<div class="dash-race-info"><div class="dash-race-label">Następne zawody</div>' +
+        '<div class="dash-race-name">' + esc(next.name) + '</div>' +
+        '<div class="dash-race-meta">' + fmtLongDate(next.date) +
+        (next.dist ? ' · ' + fmtNum(next.dist) + ' km' : '') + (next.city ? ' · ' + esc(next.city) : '') + '</div></div></div>';
+    } else {
+      html = '<div class="card dash-race dash-race-none">' +
+        '<div class="dash-empty small">' +
+        (mascotOn() ? jamnikSVG(56, 'rest') : '<div class="dash-empty-ico">' + icon('flag') + '</div>') +
+        '<p>Brak zaplanowanych zawodów.</p></div>' +
+        '<button class="btn secondary dash-start" data-dash-start="zawody">' + icon('flag') + ' Dodaj zawody</button></div>';
+    }
   }
   document.getElementById('dash-race').innerHTML = html;
 }
@@ -1108,7 +1125,7 @@ function markersForDay(ds) {
     marks.push('<span class="gym-mark ' + pi + '" title="' + esc(l.title || '') + '">' + icon(pi) + '</span>');
   });
   if (data.health.some(h => h.date === ds)) marks.push('<span class="health-mark" title="Zdrowie"></span>');
-  if (data.races.some(r => r.date === ds)) marks.push('<span class="race-mark" title="Zawody: ' + esc((data.races.find(r => r.date === ds) || {}).name || '') + '">' + icon('flag') + '</span>');
+  if (getModulePrefs().showCompetitions && data.races.some(r => r.date === ds)) marks.push('<span class="race-mark" title="Zawody: ' + esc((data.races.find(r => r.date === ds) || {}).name || '') + '">' + icon('flag') + '</span>');
   if (marks.length > 3) {
     const extra = marks.length - 2;
     marks.splice(2, extra, '<span class="cal-more" title="Jeszcze ' + extra + ' wpisów">+' + extra + '</span>');
@@ -3621,6 +3638,7 @@ function importData(file) {
       if (!d || !Array.isArray(d.plans) || !Array.isArray(d.logs)) throw new Error('bad');
       data = normalizeData(d);
       save();
+      syncModules();
       state.dayDate = null;
       showTab('kalendarz');
       closeModal('modal-settings');
@@ -3870,6 +3888,34 @@ function saveTrainingPrefs(t) {
   try { localStorage.setItem(trainingKey(), JSON.stringify(t)); } catch (e) {}
 }
 
+/* ==================== MODUŁY ==================== */
+
+function getModulePrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(MODULES_KEY) || 'null');
+    if (p && typeof p === 'object' && typeof p.showCompetitions === 'boolean') return p;
+  } catch (e) {}
+  const def = { showCompetitions: hasLegacyData() };
+  saveModulePrefs(def);
+  return def;
+}
+
+function saveModulePrefs(m) {
+  try { localStorage.setItem(MODULES_KEY, JSON.stringify(m)); } catch (e) {}
+}
+
+function syncModules() {
+  const m = getModulePrefs();
+  const nav = document.getElementById('nav-zawody');
+  if (nav) nav.classList.toggle('hidden', !m.showCompetitions);
+  if (!m.showCompetitions && state.tab === 'zawody') showTab('dzis');
+}
+
+function fillModuleSettings() {
+  const cb = document.getElementById('show-competitions');
+  if (cb) cb.checked = getModulePrefs().showCompetitions;
+}
+
 function fillTrainingSettings() {
   const t = getTrainingPrefs();
   const ra = document.getElementById('rest-auto');
@@ -3924,6 +3970,7 @@ function saveReminderSettings() {
 function raceRemindKey() { return 'betternm_raceremind_v1_' + activeProfile().id; }
 
 function checkRaceReminder() {
+  if (!getModulePrefs().showCompetitions) return;
   if (!data.races || !data.races.length) return;
   const today = todayStr();
   if (localStorage.getItem(raceRemindKey()) === today) return;
@@ -3966,7 +4013,15 @@ setInterval(() => { if (getTheme() === 'auto') applyTheme('auto'); }, 60000);
 function bindEvents() {
   document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
   const fab = document.getElementById('fab');
-  if (fab) fab.addEventListener('click', fabAction);
+  if (fab) fab.addEventListener('click', toggleFabMenu);
+  document.addEventListener('click', e => {
+    const item = e.target.closest('.fab-item');
+    if (item) {
+      fabAction(parseInt(item.dataset.fabItem, 10));
+      return;
+    }
+    if (!e.target.closest('.fab-wrap')) closeFabMenu();
+  });
 
   const dashTab = document.getElementById('tab-dzis');
   if (dashTab) {
@@ -4341,6 +4396,7 @@ function bindEvents() {
   document.getElementById('btn-settings').addEventListener('click', () => {
     fillReminderSettings();
     fillTrainingSettings();
+    fillModuleSettings();
     renderFeedback();
     renderChangelog();
     openModal('modal-settings');
@@ -4445,6 +4501,14 @@ document.getElementById('prog-fill').addEventListener('change', e => {
   t.progFill = e.target.checked;
   saveTrainingPrefs(t);
   toast(e.target.checked ? 'Auto-ciężary z rozpiski włączone' : 'Auto-ciężary z rozpiski wyłączone');
+});
+document.getElementById('show-competitions').addEventListener('change', e => {
+  const m = getModulePrefs();
+  m.showCompetitions = e.target.checked;
+  saveModulePrefs(m);
+  syncModules();
+  toast(e.target.checked ? 'Sekcja zawodów włączona' : 'Sekcja zawodów wyłączona');
+  if (state.tab === 'dzis') renderDashboard();
 });
 document.getElementById('accent-swatches').addEventListener('click', e => {
   const sw = e.target.closest('.accent-swatch');
@@ -4551,6 +4615,7 @@ function init() {
   renderChangelog();
   refreshUpdateDot();
   fillReminderSettings();
+  syncModules();
   renderPlans();
   renderHealth();
   showTab('dzis');
